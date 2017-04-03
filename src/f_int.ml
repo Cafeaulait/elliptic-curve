@@ -8,6 +8,29 @@ module Core : (Field.Core with type element = int) = struct
   let one = 1
   let of_int x = x
   let to_int x = x
+
+  let find_first_non_zero_bit n =
+      assert (n >= 0);
+      let rec continue bit =
+	  if bit = 0 then
+	      0
+	  else if n land bit = 0 then
+	      continue (bit lsr 1)
+	  else
+	      bit
+      in
+      (* assume 64 bit architecture. *)
+      continue 0x2000000000000000
+
+  let to_bitlist n =
+      let rec continue bit =
+	  if bit = 0 then
+	      []
+	  else
+	      (if n land bit = 0 then 0 else 1)::continue (bit lsr 1)
+      in
+      continue (find_first_non_zero_bit n)
+
   let of_string = int_of_string
   let to_string = string_of_int
   let add x y = x + y
@@ -44,14 +67,10 @@ let invert x =
     else
 	raise (Failure "invert")
 
-(*
-
 let sqrt = Op.sqrt
+let mass_add = Op.mass_add
 
-let mass_add n add one zero minus_one =
-    let l = Naf.of_int n in
-    Op.mass_add l add one zero minus_one
-
+(*
 let mass_apply = Op.mass_apply
 
 let power x n =

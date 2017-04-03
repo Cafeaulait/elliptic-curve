@@ -2,6 +2,19 @@
 module FI = F_int
 module FB = F_big_int
 
+let test_bitlist() =
+    let to_string l =
+        List.fold_left (^) "" (List.map string_of_int l)
+    in
+    let x = Random.int 10000000 in
+    let xi = FI.of_int x in
+    let xb = FB.of_int x in
+    let zi = FI.to_bitlist xi in
+    let zb = FB.to_bitlist xb in
+    Printf.printf "%d = %s = %s\n" x (to_string zi) (to_string zb);
+    assert (zi = zb);
+    ()
+
 let test_four_arithmetic_ops() =
     let x = 1 + Random.int 20000000 in
     let y = 1 + Random.int 20000000 in
@@ -30,6 +43,35 @@ let test_four_arithmetic_ops() =
     flush stdout;
     assert (FI.to_string qi = FB.to_string qb);
     assert (FI.to_string ri = FB.to_string rb);
+    ()
+
+let test_square() =
+    let x = Random.int 10000000 in
+    let xi = FI.of_int x in
+    let xb = FB.of_int x in
+    let zi = FI.square xi in
+    let zb = FB.square xb in
+    Printf.printf "%d^2 = %s = %s\n" x (FI.to_string zi) (FB.to_string zb);
+    assert (FI.to_string zi = FB.to_string zb);
+    ()
+
+let test_bitshift() =
+    let x = Random.int 100000000 in
+    let y = Random.int 28 in
+    let xi = FI.of_int x in
+    let xb = FB.of_int x in
+    let zi = FI.shift_right xi y in
+    let zb = FB.shift_right xb y in
+    Printf.printf "%d >> %d = %s = %s\n" x y (FI.to_string zi) (FB.to_string zb);
+    assert (FI.to_string zi = FB.to_string zb);
+    let x = Random.int 1024 in
+    let y = Random.int 18 in
+    let xi = FI.of_int x in
+    let xb = FB.of_int x in
+    let zi = FI.shift_left xi y in
+    let zb = FB.shift_left xb y in
+    Printf.printf "%d << %d = %s = %s\n" x y (FI.to_string zi) (FB.to_string zb);
+    assert (FI.to_string zi = FB.to_string zb);
     ()
 
 let test_gcd() =
@@ -65,6 +107,28 @@ let test_inversion p =
         assert (FI.equal b FI.one)
     done
 
+let test_sqrt() =
+    let x = Random.int 0x1ffffff in
+    let xi = FI.of_int x in
+    let xb = FB.of_int x in
+    let ri = FI.sqrt xi in
+    let rb = FB.sqrt xb in
+    Printf.printf "sqrt(%d) = %s = %s\n" x (FI.to_string ri) (FB.to_string rb);
+    assert (FI.to_string ri = FB.to_string rb);
+    ()
+
+let test_mass_add() =
+    let n = Random.int 10000000 in
+    let e = Random.int 1000 in
+    let onei, minus_onei = FI.of_int e, FI.of_int (-e) in
+    let oneb, minus_oneb = FB.of_int e, FB.of_int (-e) in
+    let xi = FI.mass_add (FI.of_int n) FI.add onei FI.zero minus_onei in
+    let xb = FB.mass_add (FB.of_int n) FB.add oneb FB.zero minus_oneb in
+    Printf.printf "%s = %s\n" (FI.to_string xi) (FB.to_string xb);
+    assert (FI.to_string xi = FB.to_string xb);
+    assert (FI.equal xi (FI.of_int (n * e)));
+    ()
+
 (*
 open Arith
 
@@ -73,17 +137,6 @@ module PrimintOp = Field.MakeGenericOperation (Primint)
 module Varint2Op = Field.MakeGenericOperation (Varint2)
 
 module Varint10Op = Field.MakeGenericOperation (Varint10)
-
-let test_sqrt() =
-    let x = Random.int 0x1ffffff in
-    let xr = Varint2.of_int x in
-    let x10 = Varint10.of_int x in
-    let rr = Varint2Op.sqrt xr in
-    let r10 = Varint10Op.sqrt x10 in
-    let r2 = Conv.decimal_to_binary r10 in
-    Printf.printf "sqrt(%d) = %s = %d\n" x (Varint10.to_string r10) (Varint2.to_int rr);
-    assert (Varint2.equal rr r2);
-    ()
 
 module Varint2Op2 = Varint.MakeOperation (Varint2)
 
@@ -99,50 +152,6 @@ let test_barrett_reduction() =
 	Printf.printf "%d * %d = %d = %d (mod 10000)\n" x y (x * y) (Varint2.to_int zr);
 	assert (z = Varint2.to_int zr)
     done
-
-let test_bitshift() =
-    let x = Random.int 100000000 in
-    let y = Random.int 28 in
-    let xr = Varint2.of_int x in
-    let z = x >> y in
-    let zr = Varint2.shift_right xr y in
-    Printf.printf "%d >> %d = %d = %d\n" x y z (Varint2.to_int zr);
-    assert (z = Varint2.to_int zr);
-    let x = Random.int 1024 in
-    let y = Random.int 18 in
-    let xr = Varint2.of_int x in
-    let z = x << y in
-    let zr = Varint2.shift_left xr y in
-    Printf.printf "%d << %d = %d = %d\n" x y z (Varint2.to_int zr);
-    assert (z = Varint2.to_int zr);
-    ()
-
-let test_mass_add() =
-    for i = 1 to 100 do
-	let n = Random.int 10000000 in
-	let xr = Varint2Op.mass_add (Naf.of_int n) Varint2.add Varint2.one Varint2.zero (Varint2.of_int (-1)) in
-	Printf.printf "%d = %d\n" n (Varint2.to_int xr);
-	assert (n = Varint2.to_int xr);
-    done;
-    for n = 0 to 100 do
-	let x = Varint2.nth_power_of_2 n in
-	let l = Naf.of_bit (Varint2.to_bit x) in
-	let y = Varint10Op.mass_add l Varint10.add Varint10.one Varint10.zero (Varint10.of_int (-1)) in
-	Printf.printf "2^%d = %s\n" n (Varint10.to_string y)
-    done;
-    ()
-
-let test_conversion() =
-    let x = Random.int 10000000 in
-    let y = Random.int 10000000 in
-    let xr = Varint10.of_int x in
-    let yr = Varint10.of_int y in
-    let zr = Varint10.mul xr yr in
-    let wr = Conv.decimal_to_binary zr in
-    let ur = Conv.binary_to_decimal wr in
-    Printf.printf "conv: %s -> %s\n" (Varint10.to_string zr) (Varint10.to_string ur);
-    assert (Varint10.equal zr ur);
-    ()
 
 let test_legendre_symbol() =
     for p = 3 to 999 do
@@ -678,76 +687,6 @@ let test_ec192() =
     ()
 *)
 
-let test_square() =
-    let x = Random.int 10000000 in
-    let y = Random.int 10000000 in
-    let xr = Varint2.of_int x in
-    let yr = Varint2.of_int y in
-    let zr = Varint2.mul xr yr in
-    let ur = Varint2.mul zr zr in
-    let vr = Varint2.square zr in
-    Printf.printf "%s^2 = %s = %s\n" (Conv.string_of_varint2 zr)
-	(Conv.string_of_varint2 ur) (Conv.string_of_varint2 vr); 
-(*    Printf.printf "rep: %s\n" (Varint2.to_string ur); *)
-    assert (Varint2.equal ur vr);
-    ()
-
-let exgcd x y =
-    let g, x, y =
-	let rec continue g x y =
-	    if x mod 2 = 0 && y mod 2 = 0 then
-		continue (g * 2) (x / 2) (y / 2)
-	    else
-		g, x, y
-	in
-	continue 1 x y
-    in
-    let u = ref x in
-    let v = ref y in
-    let a = ref 1 in
-    let b = ref 0 in
-    let c = ref 0 in
-    let d = ref 1 in
-    let rec continue() =
-	while !u mod 2 = 0 do
-	    u := !u / 2;
-	    if !a mod 2 = 0 && !b mod 2 = 0 then begin
-		a := !a / 2;
-		b := !b / 2
-	    end
-	    else begin
-		a := (!a + y) / 2;
-		b := (!b - x) / 2
-	    end
-	done;
-	while !v mod 2 = 0 do
-	    v := !v / 2;
-	    if !c mod 2 = 0 && !d mod 2 = 0 then begin
-		c := !c / 2;
-		d := !d / 2
-	    end
-	    else begin
-		c := (!c + y) / 2;
-		d := (!d - x) / 2
-	    end
-	done;
-	if !v <= !u then begin
-	    u := !u - !v;
-	    a := !a - !c;
-	    b := !b - !d
-	end
-	else begin
-	    v := !v - !u;
-	    c := !c - !a;
-	    d := !d - !b
-	end;
-	if !u = 0 then
-	    (!c), (!d), (g * !v)
-	else
-	    continue()
-    in
-    continue()
-
 let main() =
     let seed = int_of_float (Unix.time()) in
     Random.init seed;
@@ -786,22 +725,12 @@ let main() =
 *)
 
 (*
-    for i = 1 to 100 do
-	test_sqrt()
-    done;
     test_barrett_reduction();
-    for i = 1 to 100 do
-	test_bitshift();
-    done;
-    test_mass_add();
     test_legendre_symbol();
     test_factorization();
     test_Pocklington_Lehmer();
     for i = 1 to 100 do
 	test_square()
-    done;
-    for i = 1 to 100 do
-	test_conversion()
     done;
     bench_inversion();
     bench_sqrt();
@@ -824,11 +753,14 @@ let main() =
     let seed = int_of_float (Unix.time()) in
     Random.init seed;
     Printf.printf "seed = %d\n" seed;
-    for i = 1 to 1000 do
-        test_four_arithmetic_ops()
-    done;
-    for i = 1 to 1000 do
-        test_gcd()
+    for _ = 1 to 1000 do
+        test_bitlist();
+        test_four_arithmetic_ops();
+        test_square();
+        test_bitshift();
+        test_gcd();
+        test_sqrt();
+        test_mass_add()
     done;
     test_inversion 997;
     ()

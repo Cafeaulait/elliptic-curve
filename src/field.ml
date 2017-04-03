@@ -18,6 +18,7 @@ module type Core = sig
   val one : element
   val of_int : int -> element
   val to_int : element -> int
+  val to_bitlist : element -> int list
   val of_string : string -> element
   val to_string : element -> string
   val add : element -> element -> element
@@ -122,8 +123,7 @@ module MakeGenericOperation (C : Core) = struct
       else
 	  continue one zero x zero one y
 
-
-  (** assuming p is a prime number and 0 < a < p. *)
+  (** invert a p returns a^(-1) mod p assuming p is a prime number and 0 < a < p. *)
   let invert a p =
       let x, _, g = extended_gcd a p in
       if not (equal g one) then begin
@@ -134,30 +134,45 @@ module MakeGenericOperation (C : Core) = struct
       let x = if less x zero then add x p else x in
       x
 
+  (** the Babylonian method. n must be positive. *)
+  let sqrt n =
+      assert (less_equal zero n);
+      let rec continue r =
+	  if less_equal (square r) n && less n (square (add r one)) then
+	      r
+	  else begin
+	      let s, _ = divmod n r in
+	      let r = shift_right (add s r) 1 in
+	      continue r
+	  end
+      in
+      continue one
+
+  (** compute x + x + ... + x. *)
+  let mass_add n add one zero minus_one =
+      let naf_list = Naf.of_bitlist (to_bitlist n) in
+      let rec continue = function
+	  [] -> zero
+	| [0] -> zero
+	| [1] -> one
+	| [-1] -> minus_one
+	| b::l ->
+	    let q = continue l in
+	    if b = 0 then
+		add q q
+	    else if b = 1 then
+		add q (add q one)
+	    else
+		add q (add q minus_one)
+      in
+      continue (List.rev naf_list)
+
 end
 
 (*
 module MakeGenericOperation (F : Core) =
     struct
       open F
-
-  (* the Babylonian method *)
-      let sqrt n =
-	    assert (less_equal zero n);
-	    let rec continue r =
-(*	Printf.printf "r = %d\n" r; *)
-		let m = mul r r in
-		let r1 = add r one in
-		let u = mul r1 r1 in
-		if less_equal m n && less n u then
-		    r
-		else begin
-		    let s, _ = divmod n r in
-		    let r = shift_right (add s r) 1 in
-		    continue r
-		end
-	    in
-	    continue one
 
       let legendre_symbol a p =
 	  let a =
@@ -212,30 +227,6 @@ module MakeGenericOperation (F : Core) =
 	      in
 	      continue a p
 	  end
-
-      (* compute u + u + ... + u.
-	 naf_list indicates the times of addition. *)
-      let mass_add naf_list add one zero minus_one =
-	  let rec continue = function
-	      [] -> zero
-	    | [0] -> zero
-	    | [1] -> one
-	    | [-1] -> minus_one
-	    | b::l ->
-		let q = continue l in
-		if b = 0 then begin
-		    add q q
-		end
-		else if b = 1 then begin
-		    add q (add q one)
-		end
-		else begin
-		    add q (add q minus_one)
-		end
-	  in
-	  let q = continue (List.rev naf_list) in
-(*	    Printf.printf "#addition = %d\n" (!counter); *)
-	  q
 
       (* e: the unit of multiplication
 	   u: the unit of addition *)
