@@ -1,6 +1,6 @@
-(** A field over int. *)
+(** A field over [int]. *)
 
-(** The core operations in a field over int. *)
+(** The core operations in a field over [int]. *)
 module Core : (Field.Core with type element = int) = struct
   type element = int
 
@@ -69,24 +69,19 @@ let invert x =
 
 let sqrt = Op.sqrt
 let mass_add = Op.mass_add
-
-(*
 let mass_apply = Op.mass_apply
-
-let power x n =
-    mass_apply n mul x 1
+let power = Op.power
 
 let legendre_symbol n =
     assert (n >= 0);
     if n = 0 then
 	0
-    else begin
-	let r = sqrt n in
-	if square r = n then
-	    1
-	else
-	    -1
-    end
+    else if square (sqrt n) = n then
+	1
+    else
+	-1
+
+(*
 
 let quadratic_residue = Op.sqrt
 *)

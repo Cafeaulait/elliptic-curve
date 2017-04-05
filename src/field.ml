@@ -104,7 +104,7 @@ module MakeGenericOperation (C : Core) = struct
 	      gcd y r
       end
 
-  (** return (a,b,c) s.t. ax + by = c = gcd(x,y), provided that both x and y >= 0. *)
+  (** [extended_gcd x y] returns (a,b,c) s.t. ax + by = c = gcd(x,y), provided that both x and y >= 0. *)
   let extended_gcd x y =
       let rec continue a0 b0 c0 a1 b1 c1 =
 	  (* invariant: ax + by = c *)
@@ -123,7 +123,7 @@ module MakeGenericOperation (C : Core) = struct
       else
 	  continue one zero x zero one y
 
-  (** invert a p returns a^(-1) mod p assuming p is a prime number and 0 < a < p. *)
+  (** [invert a p] returns {i a}{^ -1} mod {i p} assuming {i p} is a prime number and {i 0} < {i a} < {i p}. *)
   let invert a p =
       let x, _, g = extended_gcd a p in
       if not (equal g one) then begin
@@ -134,7 +134,7 @@ module MakeGenericOperation (C : Core) = struct
       let x = if less x zero then add x p else x in
       x
 
-  (** the Babylonian method. n must be positive. *)
+  (** Compute [sqrt n] in the Babylonian method. {i n} must be positive. *)
   let sqrt n =
       assert (less_equal zero n);
       let rec continue r =
@@ -148,7 +148,7 @@ module MakeGenericOperation (C : Core) = struct
       in
       continue one
 
-  (** compute x + x + ... + x. *)
+  (** Compute [x + x + ... + x]. *)
   let mass_add n add one zero minus_one =
       let naf_list = Naf.of_bitlist (to_bitlist n) in
       let rec continue = function
@@ -167,87 +167,93 @@ module MakeGenericOperation (C : Core) = struct
       in
       continue (List.rev naf_list)
 
+  (** Compute [u * u * ... * u]. *)
+  (* e: the unit of multiplication
+     u: the unit of addition. *)
+  let mass_apply n f u e =
+      let rec continue n =
+	  if equal n zero then
+	      e
+	  else if equal n one then
+	      u
+	  else if mod2 n = 0 then begin
+	      (* even number *)
+	      let q = continue (shift_right n 1) in
+	      f q q
+	  end
+	  else begin
+	      (* odd number *)
+	      let q = continue (shift_right n 1) in
+	      f q (f q u)
+	  end
+      in
+      continue n
+
+  (** Compute [x^n]. *)
+  let power x n =
+    assert (less_equal zero n);
+    mass_apply n mul x one
+
+  (** The Legendre symbol. *)
+  let legendre_symbol a p =
+      let a =
+	  if less a p && less_equal zero a then
+	      a
+	  else begin
+	      let _, a = divmod a p in
+	      a
+	  end
+      in
+      let a = if less a zero then add a p else a in
+      if equal a zero then
+	  0
+      else begin
+	  let l = ref 1 in
+	  let rec remove_power_of_four x =
+	      if mod4 x = 0 then
+		  remove_power_of_four (shift_right x 2)
+	      else
+		  x
+	  in
+	  let rec continue x y =
+	      let _, x = divmod x y in
+	      let x =
+		  if less (shift_right y 1) x then begin
+		      if mod4 y = 3 then
+			  l := -(!l);
+		      sub y x
+		  end
+		  else
+		      x
+	      in
+	      let x = remove_power_of_four x in
+	      let x =
+		  if mod2 x = 0 then begin
+		      let y8 = mod8 y in
+		      if y8 = 3 || y8 = 5 then
+			  l := -(!l);
+		      shift_right x 1
+		  end
+		  else
+		      x
+	      in
+	      if equal x one then
+		  !l
+	      else begin
+		  if mod4 x = 3 && mod4 y = 3 then
+		      l := -(!l);
+		  continue y x
+	      end
+	  in
+	  continue a p
+      end
+
 end
 
 (*
 module MakeGenericOperation (F : Core) =
     struct
       open F
-
-      let legendre_symbol a p =
-	  let a =
-	      if less a p && less_equal zero a then
-		  a
-	      else begin
-		  let _, a = divmod a p in
-		  a
-	      end
-	  in
-	  let a = if less a zero then add a p else a in
-	  if equal a zero then
-	      0
-	  else begin
-	      let l = ref 1 in
-	      let rec remove_power_of_four x =
-		  if mod4 x = 0 then
-			remove_power_of_four (shift_right x 2)
-		    else
-			x
-	      in
-	      let rec continue x y =
-(*	    Printf.printf "l(%d/%d): %d\n" x y (!l); *)
-		  let _, x = divmod x y in
-		  let x =
-		      if less (shift_right y 1) x then begin
-			  if mod4 y = 3 then
-			      l := -(!l);
-			  sub y x
-		      end
-		      else
-			  x
-		  in
-		  let x = remove_power_of_four x in
-		  let x =
-		      if mod2 x = 0 then begin
-			  let y8 = mod8 y in
-			  if y8 = 3 || y8 = 5 then
-			      l := -(!l);
-			  shift_right x 1
-		      end
-		      else
-			  x
-		  in
-		  if equal x one then
-		      !l
-		  else begin
-		      if mod4 x = 3 && mod4 y = 3 then
-			  l := -(!l);
-		      continue y x
-		  end
-	      in
-	      continue a p
-	  end
-
-      (* e: the unit of multiplication
-	   u: the unit of addition *)
-      let mass_apply n f u e =
-	  let rec continue n =
-	      if equal n zero then
-		    e
-	      else if equal n one then
-		    u
-	      else if mod2 n = 0 then begin
-	          (* even number *)
-		  let q = continue (shift_right n 1) in
-		  f q q
-	      end
-	      else begin
-	          (* odd number *)
-		  let q = continue (shift_right n 1) in
-		  f q (f q u)
-		end
-	    in
-	  continue n
 
       (* This function may not terminate if p is not an odd prime. *)
       let find_quadratic_nonresidue p =

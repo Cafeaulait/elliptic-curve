@@ -129,6 +129,41 @@ let test_mass_add() =
     assert (FI.equal xi (FI.of_int (n * e)));
     ()
 
+let test_power() =
+    let n = Random.int 10 in
+    let e = Random.int 10 in
+    let ni = FI.of_int n in
+    let nb = FB.of_int n in
+    let ei = FI.of_int e in
+    let eb = FB.of_int e in
+    let zi = FI.power ei ni in
+    let zb = FB.power eb nb in
+    Printf.printf "%d^%d = %s = %s\n" e n (FI.to_string zi) (FB.to_string zb);
+    assert (FI.to_string zi = FB.to_string zb);
+    ()
+
+let test_legendre_symbol() =
+    for p = 3 to 999 do
+	if Prime.is_prime_under_1000 p then begin
+	    Printf.printf "checking (a/%d)" p;
+            flush stdout;
+	    let number_of_sqrt = Array.make p 0 in
+	    for a = 1 to p - 1 do
+		let n = (a * a) mod p in
+		number_of_sqrt.(n) <- number_of_sqrt.(n) + 1
+	    done;
+	    for a = 0 to p - 1 do
+		match FB.Op.legendre_symbol (FB.of_int a) (FB.of_int p) with
+		    -1 -> assert (number_of_sqrt.(a) = 0)
+		  | 0 -> assert (a = 0)
+		  | 1 -> assert (number_of_sqrt.(a) > 0)
+		  | _ -> assert false
+	    done;
+	    Printf.printf " ok\n";
+            flush stdout;
+	end
+    done
+
 (*
 open Arith
 
@@ -151,29 +186,6 @@ let test_barrett_reduction() =
 	let zr = barrett_reduction (Varint2.mul xr yr) in
 	Printf.printf "%d * %d = %d = %d (mod 10000)\n" x y (x * y) (Varint2.to_int zr);
 	assert (z = Varint2.to_int zr)
-    done
-
-let test_legendre_symbol() =
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    Printf.printf "p = %d\n" p; flush stdout;
-	    let pr = Varint2.of_int p in
-	    let number_of_sqrt = Array.create p 0 in
-	    for a = 1 to p - 1 do
-		let n = (a * a) mod p in
-		number_of_sqrt.(n) <- number_of_sqrt.(n) + 1
-	    done;
-	    for a = 0 to p - 1 do
-		let ar = Varint2.of_int a in
-		let l = PrimintOp.legendre_symbol a p in
-		assert (Varint2Op.legendre_symbol ar pr = l);
-		match l with
-		    -1 -> assert (number_of_sqrt.(a) = 0)
-		  | 0 -> assert (a = 0)
-		  | 1 -> assert (number_of_sqrt.(a) > 0)
-		  | _ -> assert false
-	    done
-	end
     done
 
 let test_factorization() =
@@ -760,9 +772,11 @@ let main() =
         test_bitshift();
         test_gcd();
         test_sqrt();
-        test_mass_add()
+        test_mass_add();
+        test_power()
     done;
     test_inversion 997;
+    test_legendre_symbol();
     ()
 
 ;;

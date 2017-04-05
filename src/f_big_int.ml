@@ -1,8 +1,8 @@
-(** A field over big_int. *)
+(** A field over [big_int]. *)
 
 open Big_int_Z
 
-(** The core operations in a field over big_int. *)
+(** The core operations in a field over [big_int]. *)
 module Core : (Field.Core with type element = Z.t) = struct
   type element = Z.t
 
@@ -85,80 +85,14 @@ let invert x =
 
 let sqrt = sqrt_big_int
 let mass_add = Op.mass_add
+let mass_apply = Op.mass_apply
+let power = Op.power
 
-(*
-open Arith
-open Varint
-
-let radix = 0x1000000
-
-let word_size = 24
-
-let upper_word_mask = 0x7f000000
-
-let lower_word_mask = 0xffffff
-
-type element = Varint.element
-
-let compare = Varint.compare
-let less = Varint.less
-let less_equal = Varint.less_equal
-let equal = Varint.equal
-
-let nth_power_of_2 n =
-    let b = n / word_size in
-    let x = Array.create (b + 1) 0 in
-    x.(b) <- 1 << (n mod word_size);
-    { sign = PLUS; aval = x }
-
-(* Updates the lowest word with a given parameter.
-   The parameter and the original value are combined according to bitwise logical or. *)
-let update_or_lowest_byte x n =
-    assert (x.sign = PLUS);
-    let x = x.aval in
-    let n = n land 0xff in
-    x.(0) <- x.(0) lor n
-
-let get_lowest_byte x =
-    assert (x.sign = PLUS);
-    x.aval.(0) land 0xff
-
-(* Shifts the value to the left in a destructive manner.
-   The number of bits to be shifted is always 8.
-   Carry over must not happen. *)
-
-let update_shift_left_8 x =
-    assert (x.sign = PLUS);
-    let x = x.aval in
-    let length = Array.length x in
-    let rec continue i carry =
-	if i = length then begin
-	    assert (carry = 0);
-	    ()
-	end
-	else begin
-	    let v = x.(i) in
-	    x.(i) <- ((v << 8) lor carry) land lower_word_mask;
-	    continue (i + 1) (v >> (word_size - 8))
-	end
-    in
-    continue 0 0
-
-(* Shifts the value to the right in a destructive manner.
-   The number of bits to be shifted is always 8.
-   The highest word is NOT truncated even when it equals to zero. *)
-
-let update_shift_right_8 x =
-    assert (x.sign = PLUS);
-    let x = x.aval in
-    let length = Array.length x in
-    if length = 1 then 
-	x.(0) <- x.(0) >> 8
-    else begin
-	for i = 0 to length - 2 do
-	    let v = (x.(i) >> 8) lor (x.(i + 1) << (word_size - 8)) in
-	    x.(i) <- v land lower_word_mask
-	done;
-	x.(length - 1) <- x.(length - 1) >> 8
-    end
-*)
+let legendre_symbol n =
+    assert (less_equal zero n);
+    if equal n zero then
+	0
+    else if equal (square (sqrt n)) n then
+	1
+    else
+	-1
