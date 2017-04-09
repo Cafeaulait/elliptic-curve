@@ -1,16 +1,18 @@
 
-module FI = F_int
-module FB = F_big_int
+open Big_int_Z
+
+module ZI : (Field.t with type element = int) = Z_int
+module ZB : (Field.t with type element = Z.t) = Z_big_int
 
 let test_bitlist() =
     let to_string l =
         List.fold_left (^) "" (List.map string_of_int l)
     in
     let x = Random.int 10000000 in
-    let xi = FI.of_int x in
-    let xb = FB.of_int x in
-    let zi = FI.to_bitlist xi in
-    let zb = FB.to_bitlist xb in
+    let xi = ZI.of_int x in
+    let xb = ZB.of_int x in
+    let zi = ZI.to_bitlist xi in
+    let zb = ZB.to_bitlist xb in
     Printf.printf "%d = %s = %s\n" x (to_string zi) (to_string zb);
     assert (zi = zb);
     ()
@@ -18,128 +20,128 @@ let test_bitlist() =
 let test_four_arithmetic_ops() =
     let x = 1 + Random.int 20000000 in
     let y = 1 + Random.int 20000000 in
-    let xi, yi = FI.of_int x, FI.of_int y in
-    let xb, yb = FB.of_int x, FB.of_int y in
-    let zi = FI.add xi yi in
-    let zb = FB.add xb yb in
-    Printf.printf "%d + %d = %s = %s\n" x y (FI.to_string zi) (FB.to_string zb);
+    let xi, yi = ZI.of_int x, ZI.of_int y in
+    let xb, yb = ZB.of_int x, ZB.of_int y in
+    let zi = ZI.add xi yi in
+    let zb = ZB.add xb yb in
+    Printf.printf "%d + %d = %s = %s\n" x y (ZI.to_string zi) (ZB.to_string zb);
     flush stdout;
-    assert (FI.to_string zi = FB.to_string zb);
-    let wi = FI.sub xi yi in
-    let wb = FB.sub xb yb in
-    Printf.printf "%d - %d = %s = %s\n" x y (FI.to_string wi) (FB.to_string wb);
+    assert (ZI.to_string zi = ZB.to_string zb);
+    let wi = ZI.sub xi yi in
+    let wb = ZB.sub xb yb in
+    Printf.printf "%d - %d = %s = %s\n" x y (ZI.to_string wi) (ZB.to_string wb);
     flush stdout;
-    assert (FI.to_string wi = FB.to_string wb);
-    let ui = FI.mul xi yi in
-    let ub = FB.mul xb yb in
-    Printf.printf "%d * %d = %s = %s\n" x y (FI.to_string ui) (FB.to_string ub);
+    assert (ZI.to_string wi = ZB.to_string wb);
+    let ui = ZI.mul xi yi in
+    let ub = ZB.mul xb yb in
+    Printf.printf "%d * %d = %s = %s\n" x y (ZI.to_string ui) (ZB.to_string ub);
     flush stdout;
-    assert (FI.to_string ui = FB.to_string ub);
-    let qi, ri = FI.divmod xi yi in
-    let qb, rb = FB.divmod xb yb in
+    assert (ZI.to_string ui = ZB.to_string ub);
+    let qi, ri = ZI.divmod xi yi in
+    let qb, rb = ZB.divmod xb yb in
     Printf.printf "%d / %d = (%s, %s) = (%s, %s)\n" x y
-        (FI.to_string qi) (FI.to_string ri)
-        (FB.to_string qb) (FB.to_string rb);
+        (ZI.to_string qi) (ZI.to_string ri)
+        (ZB.to_string qb) (ZB.to_string rb);
     flush stdout;
-    assert (FI.to_string qi = FB.to_string qb);
-    assert (FI.to_string ri = FB.to_string rb);
+    assert (ZI.to_string qi = ZB.to_string qb);
+    assert (ZI.to_string ri = ZB.to_string rb);
     ()
 
 let test_square() =
     let x = Random.int 10000000 in
-    let xi = FI.of_int x in
-    let xb = FB.of_int x in
-    let zi = FI.square xi in
-    let zb = FB.square xb in
-    Printf.printf "%d^2 = %s = %s\n" x (FI.to_string zi) (FB.to_string zb);
-    assert (FI.to_string zi = FB.to_string zb);
+    let xi = ZI.of_int x in
+    let xb = ZB.of_int x in
+    let zi = ZI.square xi in
+    let zb = ZB.square xb in
+    Printf.printf "%d^2 = %s = %s\n" x (ZI.to_string zi) (ZB.to_string zb);
+    assert (ZI.to_string zi = ZB.to_string zb);
     ()
 
 let test_bitshift() =
     let x = Random.int 100000000 in
     let y = Random.int 28 in
-    let xi = FI.of_int x in
-    let xb = FB.of_int x in
-    let zi = FI.shift_right xi y in
-    let zb = FB.shift_right xb y in
-    Printf.printf "%d >> %d = %s = %s\n" x y (FI.to_string zi) (FB.to_string zb);
-    assert (FI.to_string zi = FB.to_string zb);
+    let xi = ZI.of_int x in
+    let xb = ZB.of_int x in
+    let zi = ZI.shift_right xi y in
+    let zb = ZB.shift_right xb y in
+    Printf.printf "%d >> %d = %s = %s\n" x y (ZI.to_string zi) (ZB.to_string zb);
+    assert (ZI.to_string zi = ZB.to_string zb);
     let x = Random.int 1024 in
     let y = Random.int 18 in
-    let xi = FI.of_int x in
-    let xb = FB.of_int x in
-    let zi = FI.shift_left xi y in
-    let zb = FB.shift_left xb y in
-    Printf.printf "%d << %d = %s = %s\n" x y (FI.to_string zi) (FB.to_string zb);
-    assert (FI.to_string zi = FB.to_string zb);
+    let xi = ZI.of_int x in
+    let xb = ZB.of_int x in
+    let zi = ZI.shift_left xi y in
+    let zb = ZB.shift_left xb y in
+    Printf.printf "%d << %d = %s = %s\n" x y (ZI.to_string zi) (ZB.to_string zb);
+    assert (ZI.to_string zi = ZB.to_string zb);
     ()
 
 let test_gcd() =
     let x = Random.int 10000 in
     let y = Random.int 10000 in
-    let xi, yi = FI.of_int x, FI.of_int y in
-    let xb, yb = FB.of_int x, FB.of_int y in
-    let gi = FI.gcd xi yi in
-    let gb = FB.gcd xb yb in
-    Printf.printf "gcd(%d,%d) = %s = %s\n" x y (FI.to_string gi) (FB.to_string gb);
+    let xi, yi = ZI.of_int x, ZI.of_int y in
+    let xb, yb = ZB.of_int x, ZB.of_int y in
+    let gi = ZI.gcd xi yi in
+    let gb = ZB.gcd xb yb in
+    Printf.printf "gcd(%d,%d) = %s = %s\n" x y (ZI.to_string gi) (ZB.to_string gb);
     flush stdout;
-    assert (FI.to_string gi = FB.to_string gb);
-    let ai, bi, ci = FI.extended_gcd xi yi in
-    let ab, bb, cb = FB.extended_gcd xb yb in
-    Printf.printf "%s x %s + %s x %s = %s\n" (FI.to_string ai) (FI.to_string xi)
-        (FI.to_string bi) (FI.to_string yi) (FI.to_string ci);
+    assert (ZI.to_string gi = ZB.to_string gb);
+    let ai, bi, ci = ZI.extended_gcd xi yi in
+    let ab, bb, cb = ZB.extended_gcd xb yb in
+    Printf.printf "%s x %s + %s x %s = %s\n" (ZI.to_string ai) (ZI.to_string xi)
+        (ZI.to_string bi) (ZI.to_string yi) (ZI.to_string ci);
     flush stdout;
-    assert (FI.to_string ai = FB.to_string ab);
-    assert (FI.to_string bi = FB.to_string bb);
-    assert (FI.to_string ci = FB.to_string cb);
+    assert (ZI.to_string ai = ZB.to_string ab);
+    assert (ZI.to_string bi = ZB.to_string bb);
+    assert (ZI.to_string ci = ZB.to_string cb);
     ()
 
 let test_inversion p =
-    let q = FI.of_int p in
+    let q = ZI.of_int p in
     for i = 1 to p - 1 do
-        let a = FI.of_int i in
-	let x = FI.Op.invert a q in
-	let w = FI.mul a x in
-	let _, b = FI.divmod w q in
+        let a = ZI.of_int i in
+	let x = Z_int.Op.invert a q in
+	let w = ZI.mul a x in
+	let _, b = ZI.divmod w q in
 	Printf.printf "%s x %s = %s (mod %d)\n"
-            (FI.to_string a) (FI.to_string x) (FI.to_string b) p;
+            (ZI.to_string a) (ZI.to_string x) (ZI.to_string b) p;
         flush stdout;
-        assert (FI.equal b FI.one)
+        assert (ZI.equal b ZI.one)
     done
 
 let test_sqrt() =
     let x = Random.int 0x1ffffff in
-    let xi = FI.of_int x in
-    let xb = FB.of_int x in
-    let ri = FI.sqrt xi in
-    let rb = FB.sqrt xb in
-    Printf.printf "sqrt(%d) = %s = %s\n" x (FI.to_string ri) (FB.to_string rb);
-    assert (FI.to_string ri = FB.to_string rb);
+    let xi = ZI.of_int x in
+    let xb = ZB.of_int x in
+    let ri = ZI.sqrt xi in
+    let rb = ZB.sqrt xb in
+    Printf.printf "sqrt(%d) = %s = %s\n" x (ZI.to_string ri) (ZB.to_string rb);
+    assert (ZI.to_string ri = ZB.to_string rb);
     ()
 
 let test_mass_add() =
     let n = Random.int 10000000 in
     let e = Random.int 1000 in
-    let onei, minus_onei = FI.of_int e, FI.of_int (-e) in
-    let oneb, minus_oneb = FB.of_int e, FB.of_int (-e) in
-    let xi = FI.mass_add (FI.of_int n) FI.add onei FI.zero minus_onei in
-    let xb = FB.mass_add (FB.of_int n) FB.add oneb FB.zero minus_oneb in
-    Printf.printf "%s = %s\n" (FI.to_string xi) (FB.to_string xb);
-    assert (FI.to_string xi = FB.to_string xb);
-    assert (FI.equal xi (FI.of_int (n * e)));
+    let onei, minus_onei = ZI.of_int e, ZI.of_int (-e) in
+    let oneb, minus_oneb = ZB.of_int e, ZB.of_int (-e) in
+    let xi = ZI.mass_add (ZI.of_int n) ZI.add onei ZI.zero minus_onei in
+    let xb = ZB.mass_add (ZB.of_int n) ZB.add oneb ZB.zero minus_oneb in
+    Printf.printf "%s = %s\n" (ZI.to_string xi) (ZB.to_string xb);
+    assert (ZI.to_string xi = ZB.to_string xb);
+    assert (ZI.equal xi (ZI.of_int (n * e)));
     ()
 
 let test_power() =
     let n = Random.int 10 in
     let e = Random.int 10 in
-    let ni = FI.of_int n in
-    let nb = FB.of_int n in
-    let ei = FI.of_int e in
-    let eb = FB.of_int e in
-    let zi = FI.power ei ni in
-    let zb = FB.power eb nb in
-    Printf.printf "%d^%d = %s = %s\n" e n (FI.to_string zi) (FB.to_string zb);
-    assert (FI.to_string zi = FB.to_string zb);
+    let ni = ZI.of_int n in
+    let nb = ZB.of_int n in
+    let ei = ZI.of_int e in
+    let eb = ZB.of_int e in
+    let zi = ZI.power ei ni in
+    let zb = ZB.power eb nb in
+    Printf.printf "%d^%d = %s = %s\n" e n (ZI.to_string zi) (ZB.to_string zb);
+    assert (ZI.to_string zi = ZB.to_string zb);
     ()
 
 let test_legendre_symbol() =
@@ -153,7 +155,7 @@ let test_legendre_symbol() =
 		number_of_sqrt.(n) <- number_of_sqrt.(n) + 1
 	    done;
 	    for a = 0 to p - 1 do
-		match FB.Op.legendre_symbol (FB.of_int a) (FB.of_int p) with
+		match Z_big_int.Op.legendre_symbol (ZB.of_int a) (ZB.of_int p) with
 		    -1 -> assert (number_of_sqrt.(a) = 0)
 		  | 0 -> assert (a = 0)
 		  | 1 -> assert (number_of_sqrt.(a) > 0)
@@ -163,6 +165,20 @@ let test_legendre_symbol() =
             flush stdout;
 	end
     done
+
+let test_barrett_reduction() =
+    let p = shift_left_big_int (big_int_of_int (1 + Random.int 10000)) 64 in
+    let barrett_reduction = F_big_int.make_barrett_reduction p in
+    for i = 1 to 1000 do
+	let x = mod_big_int (shift_left_big_int (big_int_of_int (Random.int 10000)) 64) p in
+	let y = mod_big_int (shift_left_big_int (big_int_of_int (Random.int 10000)) 64) p in
+	let z = mod_big_int (mult_big_int x y) p in
+        let w = barrett_reduction (mult_big_int x y) in
+	Printf.printf "%s * %s = %s = %s (mod %s)\n" (string_of_big_int x) (string_of_big_int y)
+            (string_of_big_int z) (string_of_big_int w) (string_of_big_int p);
+	assert (eq_big_int z w)
+    done;
+    flush stdout
 
 (*
 open Arith
@@ -174,19 +190,6 @@ module Varint2Op = Field.MakeGenericOperation (Varint2)
 module Varint10Op = Field.MakeGenericOperation (Varint10)
 
 module Varint2Op2 = Varint.MakeOperation (Varint2)
-
-let test_barrett_reduction() =
-    let barrett_reduction = Varint2Op2.make_barrett_reduction (Varint2.of_int 10000) in
-    for i = 1 to 100 do
-	let x = Random.int 10000 in
-	let y = Random.int 10000 in
-	let z = (x * y) mod 10000 in
-	let xr = Varint2.of_int x in
-	let yr = Varint2.of_int y in
-	let zr = barrett_reduction (Varint2.mul xr yr) in
-	Printf.printf "%d * %d = %d = %d (mod 10000)\n" x y (x * y) (Varint2.to_int zr);
-	assert (z = Varint2.to_int zr)
-    done
 
 let test_factorization() =
     for i = 1 to 1000 do 
@@ -777,6 +780,7 @@ let main() =
     done;
     test_inversion 997;
     test_legendre_symbol();
+    test_barrett_reduction();
     ()
 
 ;;

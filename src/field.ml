@@ -53,7 +53,6 @@ module type t = sig
   val power : element -> element -> element
   val legendre_symbol : element -> int
   val quadratic_residue : element -> element
-  val barrett_reduction : element -> element -> element
 end
   
 (** A set of generic operations based on the core operations. *)
@@ -248,62 +247,52 @@ module MakeGenericOperation (C : Core) = struct
 	  continue a p
       end
 
-end
-
-(*
-module MakeGenericOperation (F : Core) =
-    struct
-      open F
-
-      (* This function may not terminate if p is not an odd prime. *)
-      let find_quadratic_nonresidue p =
-	    let find_nonresidue() =
-		let rec continue x =
-		    assert (less x p);
-		    if legendre_symbol x p = -1 then
-			x
-		    else
-			continue (add x one)
-		in
-		continue (of_int 2)
-	    in
-	    find_nonresidue()
-
-      let quadratic_residue power mul quadratic_nonresidue a p =
-	  let a_inv = invert a p in
-	  let pm1 = sub p one in
-	  let n = quadratic_nonresidue in
-	  let s, e =
-	      let rec continue s e = 
-		    if mod2 s = 0 then
-			continue (shift_right s 1) (e + 1)
-		    else
-			s, e
-		in
-		continue pm1 0
-	    in
-	  let b0 = power n s in
-	  let r = power a (shift_right (add s one) 1) in
-(*	Printf.printf "s = %d, e = %d, b = %d, r = %d, a^-1 = %d\n" (to_int s)
-   e (to_int b0) (to_int r) (to_int a_inv); *)
-	  let rec continue j b =
-	      let t = mul b r in
-(*	    Printf.printf "%d: b = %d, t = %d\n" j (to_int b) (to_int t); *)
-	      if j = e - 1 then
-		  t
-	      else begin
-		  let d = mul a_inv (square t) in
-		  let f = power d (nth_power_of_2 (e - 1 - j - 1)) in
-		    if equal f one then
-			continue (j + 1) b
-		    else if equal f pm1 then
-			let b_k_1 = power b0 (nth_power_of_2 j) in
-			continue (j + 1) (mul b b_k_1)
-		    else
-			assert false
-	      end
+  (** Find a quadratic non-residue. *)
+  let find_quadratic_nonresidue p =
+      let find_nonresidue() =
+	  let rec continue x =
+	      assert (less x p);
+	      if legendre_symbol x p = -1 then
+		  x
+	      else
+		  continue (add x one)
 	  in
-	  continue 0 one
+	  continue (of_int 2)
+      in
+      find_nonresidue()
 
-    end
-*)
+  (** [quadratic_residue n a p] finds a quadratic residue of [a] mod [p].
+      [n] is an arbitrary quadratic non-residue. *)
+  let quadratic_residue quadratic_nonresidue a p =
+      let a_inv = invert a p in
+      let pm1 = sub p one in
+      let n = quadratic_nonresidue in
+      let s, e =
+          let rec continue s e = 
+              if mod2 s = 0 then
+                  continue (shift_right s 1) (e + 1)
+              else
+                  s, e
+          in
+          continue pm1 0
+      in
+      let b0 = power n s in
+      let r = power a (shift_right (add s one) 1) in
+      let rec continue j b =
+          let t = mul b r in
+          if j = e - 1 then
+              t
+          else begin
+              let d = mul a_inv (square t) in
+              let f = power d (nth_power_of_2 (e - 1 - j - 1)) in
+              if equal f one then
+                  continue (j + 1) b
+              else if equal f pm1 then
+                  let b_k_1 = power b0 (nth_power_of_2 j) in
+                  continue (j + 1) (mul b b_k_1)
+              else
+                  assert false
+          end
+      in
+      continue 0 one
+end

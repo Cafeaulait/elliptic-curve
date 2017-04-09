@@ -1,4 +1,6 @@
 Field
+Z_int
+Z_big_int
 F_int
 F_big_int
 Naf

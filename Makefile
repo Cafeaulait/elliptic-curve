@@ -8,3 +8,6 @@ html:
 test:
 	ocamlbuild -use-ocamlfind -pkgs 'unix,zarith' -I src src/test.native
 	./test.native
+
+clean:
+	rm -r _build/
