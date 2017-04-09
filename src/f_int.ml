@@ -41,46 +41,37 @@ module MakeCore (O : Field.Order with type element = int) : (Field.Core with typ
   let shift_left x n = (x lsl n) mod p
 end
 
-(*
-module Make (O : Order) =
-    struct
-      include O
+module Make (O : Field.Order with type element = int) : (Field.t with type element = int) = struct
+  open O
 
-      module Core = MakeCore (O)
+  module Core = MakeCore (O)
+  module Op = Field.MakeGenericOperation (Core)
 
-	module Op = Field.MakeGenericOperation (Primint)
+  include Core
 
-	include Core
+  let log = Z_int.log
+  let gcd = Z_int.gcd
+  let extended_gcd = Z_int.extended_gcd
 
-	let log = Primint.log
-	let gcd = Primint.gcd
-	let extended_gcd = Primint.extended_gcd
+  let invert x =
+      Z_int.Op.invert x p
 
-	let invert x =
-	    Op.invert x p
+  let sqrt = Z_int.sqrt
+  let mass_add = Z_int.mass_add
+  let mass_apply = Z_int.mass_apply
+  let power = Op.power
+  let legendre_symbol a = Z_int.Op.legendre_symbol a p
 
-	let sqrt = Primint.sqrt
-	let mass_add = Primint.mass_add
-	let mass_apply = Primint.mass_apply
+  let quadratic_nonresidue = ref None
 
-	let power x n =
-	    Primint.mass_apply n mul x one
-
-	let legendre_symbol a =
-	    Op.legendre_symbol a p
-
-	let quadratic_nonresidue = ref None
-
-	let quadratic_residue a =
-	    let n =
-		match !quadratic_nonresidue with
-		    Some n -> n
-		  | None ->
-		      let n = Op.find_quadratic_nonresidue p in
-		      quadratic_nonresidue := Some n;
-		      n
-	    in
-	    Op.quadratic_residue power mul n a p
-
-      end
-*)
+  let quadratic_residue a =
+      let n =
+	  match !quadratic_nonresidue with
+	      Some n -> n
+	    | None ->
+		let n = Op.find_quadratic_nonresidue p in
+		quadratic_nonresidue := Some n;
+		n
+      in
+      Op.quadratic_residue n a p
+end

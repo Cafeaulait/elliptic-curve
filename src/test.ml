@@ -740,13 +740,8 @@ let main() =
 *)
 
 (*
-    test_barrett_reduction();
-    test_legendre_symbol();
     test_factorization();
     test_Pocklington_Lehmer();
-    for i = 1 to 100 do
-	test_square()
-    done;
     bench_inversion();
     bench_sqrt();
     bench_legendre_symbol();

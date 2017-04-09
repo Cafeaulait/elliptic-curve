@@ -77,219 +77,41 @@ module MakeCore (O : Field.Order with type element = Z.t) : (Field.Core with typ
 	  0 -> x
 	| 1 -> barrett_reduction (shift_left_big_int x 1)
 	| _ -> mod_big_int (shift_left_big_int x n) p
-
 end
 
-(*
-module Make (O : Order) =
-    struct
-      module Core = MakeCore (O)
+module Make (O : Field.Order with type element = Z.t) : (Field.t with type element = Z.t) = struct
+  open O
 
-      module Op = Field.MakeGenericOperation (Varint2)
+  module Core = MakeCore (O)
+  module Op = Field.MakeGenericOperation (Core)
 
-      include Core
+  include Core
 
-      let log = Op.log
-      let gcd = Op.gcd
-      let extended_gcd = Op.extended_gcd
+  let log = Z_big_int.log
+  let gcd = Z_big_int.gcd
+  let extended_gcd = Z_big_int.extended_gcd
 
-      let invert x =
-	  Op.invert x p
-	      
-      let sqrt = Op.sqrt
-	      
-      let mass_add n add one zero minus_one =
-	  let l = Naf.of_bit (Varint2.to_bit n) in
-	  Op.mass_add l add one zero minus_one
+  let invert x =
+      Z_big_int.Op.invert x p
 
-      let mass_apply = Op.mass_apply
+  let sqrt = Z_big_int.sqrt
 
-      let mass_apply2 n f v_one v_zero =
-	  let cache = Array.create 16 v_zero in
-	  let rec continue i v =
-	      if i > 15 then
-		  ()
-	      else begin
-		  cache.(i) <- v;
-		  continue (i + 1) (f v_one v)
-	      end
-	  in
-	  continue 0 v_zero;
-	  let a = n.Varint.aval in
-	  let rec continue i q =
-	      if i < 0 then
-		  q
-	      else begin
-		  let n = a.(i) in
-		  let w = (n >> 20) land 15 in
-		  let q =
-		      if equal q v_zero then
-			  q
-		      else begin
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  q
-		      end
-		  in
-		  let q = if w > 0 then f q cache.(w) else q in
-		  let w = (n >> 16) land 15 in
-		  let q =
-		      if equal q v_zero then
-			  q
-		      else begin
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  q
-		      end
-		  in
-		  let q = if w > 0 then f q cache.(w) else q in
-		  let w = (n >> 12) land 15 in
-		  let q =
-		      if equal q v_zero then
-			  q
-		      else begin
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  q
-		      end
-		  in
-		  let q = if w > 0 then f q cache.(w) else q in
-		  let w = (n >> 8) land 15 in
-		  let q =
-		      if equal q v_zero then
-			  q
-		      else begin
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  q
-		      end
-		  in
-		  let q = if w > 0 then f q cache.(w) else q in
-		  let w = (n >> 4) land 15 in
-		  let q =
-		      if equal q v_zero then
-			  q
-		      else begin
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  q
-		      end
-		  in
-		  let q = if w > 0 then f q cache.(w) else q in
-		  let w = n land 15 in
-		  let q =
-		      if equal q v_zero then
-			  q
-		      else begin
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  let q = f q q in
-			  q
-		      end
-		  in
-		  let q = if w > 0 then f q cache.(w) else q in
-		  continue (i - 1) q
-	      end
-	  in
-	  if equal n zero then
-	      v_zero
-	  else if equal n one then
-	      v_one
-	  else begin
-	      let length = Array.length a in
-	      continue (length - 1) v_zero
-	  end
+  let mass_add = Z_big_int.mass_add
+  let mass_apply = Z_big_int.mass_apply
+  let power = Op.power
+  let legendre_symbol x = Z_big_int.Op.legendre_symbol x p
 
-      let power x n =
-	  mass_apply2 n mul x one
-	      
-(*
-      let legendre_symbol x =
-	  Op.legendre_symbol x p
-*)
+  let quadratic_nonresidue = ref None
 
-      let legendre_symbol a =
-	  let a =
-	      if less a p && less_equal zero a then
-		  a
-	      else begin
-		  let _, a = divmod a p in
-		  a
-	      end
-	  in
-	  let a = if less a zero then add a p else a in
-	  if equal a zero then
-	      0
-	  else begin
-	      let l = ref 1 in
-	      let rec remove_power_of_four x =
-		  if mod4 x = 0 then begin
-			remove_power_of_four (shift_right x 2)
-		    end
-		    else
-			x
-	      in
-	      let rec continue x y =
-(*		  Printf.printf "Lx = %s\n" (Conv.string_of_varint2 x);
-		  Printf.printf "Ly = %s\n" (Conv.string_of_varint2 y); *)
-(*	    Printf.printf "l(%d/%d): %d\n" x y (!l); *)
-		  let _, x = divmod x y in
-(*		  Printf.printf "Lr = %s\n" (Conv.string_of_varint2 x); *)
-		  let x =
-		      if less (shift_right y 1) x then begin
-			  if mod4 y = 3 then
-			      l := -(!l);
-			  sub y x
-		      end
-		      else
-			  x
-		  in
-		  let x = remove_power_of_four x in
-(*		  Printf.printf "L4 = %s\n" (Conv.string_of_varint2 x); *)
-		  let x =
-		      if mod2 x = 0 then begin
-			  let y8 = mod8 y in
-			  if y8 = 3 || y8 = 5 then
-			      l := -(!l);
-			  shift_right x 1
-		      end
-		      else
-			  x
-		  in
-		  if equal x one then
-		      !l
-		  else begin
-		      if mod4 x = 3 && mod4 y = 3 then
-			  l := -(!l);
-		      continue y x
-		  end
-	      in
-	      continue a p
-	  end
-
-      let quadratic_nonresidue = ref None
-	      
-      let quadratic_residue a =
-	  let n =
-	      match !quadratic_nonresidue with
-		  Some n -> n
-		| None ->
-		    let n = Op.find_quadratic_nonresidue p in
-		    quadratic_nonresidue := Some n;
-		    n
-	  in
-	  Op.quadratic_residue power mul n a p
-
-      end
-*)
+  (** The Legendre symbol. *)
+  let quadratic_residue a =
+      let n =
+	  match !quadratic_nonresidue with
+	      Some n -> n
+	    | None ->
+		let n = Op.find_quadratic_nonresidue p in
+		quadratic_nonresidue := Some n;
+		n
+      in
+      Op.quadratic_residue n a p
+end

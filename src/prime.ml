@@ -1,5 +1,13 @@
 (** Operations on prime numbers. *)
 
+open Z_big_int
+
+let n2 = add one one
+let n3 = of_int 3
+let n5 = of_int 5
+let n7 = of_int 7
+let n1000 = of_int 1000
+
 let make_prime_table_under_1000() =
     let prime_table = Array.make 1000 true in
     let rec fill_non_prime n =
@@ -41,28 +49,7 @@ let print_prime_under_1000() =
     print_string "...\n";
     ()
 
-(*
-open Varint2
-
-module Op = Field.MakeGenericOperation (Varint2)
-
-module Op2 = Varint.MakeOperation (Varint2)
-
-let sqrt = Op.sqrt
-let log = Op.log
-let gcd = Op.gcd
-
-let power x n =
-    Op.mass_apply n mul x one
-
-let two = add one one
-let n3 = of_int 3
-let n5 = of_int 5
-let n7 = of_int 7
-let n1000 = of_int 1000
-
 let last_known_prime = of_int 997
-	
 let last_known_prime_square = square last_known_prime
 
 let sort_raw_factor_list l = List.sort compare l
@@ -79,33 +66,34 @@ let make_factor_list l =
     match sort_raw_factor_list l with
 	[] -> []
       |	n::l -> continue n 1 l
-	      
+
 let rec print_factor_list = function
     [] -> ()
-  | ( p, 1 )::[] -> print_string (Conv.string_of_varint2 p)
-  | ( p, n )::[] -> Printf.printf "%s^%d" (Conv.string_of_varint2 p) n
+  | ( p, 1 )::[] -> print_string (to_string p)
+  | ( p, n )::[] -> Printf.printf "%s^%d" (to_string p) n
   | ( p, 1 )::l ->
-      print_string (Conv.string_of_varint2 p);
+      print_string (to_string p);
       print_string " * ";
       print_factor_list l
   | ( p, n )::l ->
-      Printf.printf "%s^%d * " (Conv.string_of_varint2 p) n;
+      Printf.printf "%s^%d * " (to_string p) n;
       print_factor_list l
 	  
-let rec print_list = function
+let rec print_number_list = function
     [] -> ()
-  | n::[] -> print_string (Conv.string_of_varint2 n)
+  | n::[] -> print_string (to_string n)
   | n::l ->
-      Printf.printf "%s x " (Conv.string_of_varint2 n);
-      print_list l
+      Printf.printf "%s x " (to_string n);
+      print_number_list l
 
+(** Factorize a number by brute-force search. *)
 let factorize_by_all_search n =
     assert (less n last_known_prime_square);
     let rec factorize n =
 	if less_equal n last_known_prime && is_prime_under_1000 (to_int n) then
 	    [n]
 	else if mod2 n = 0 then
-	    two::factorize (shift_right n 1)
+	    n2::factorize (shift_right n 1)
 	else begin
 	    let max = sqrt n in
 	    let rec continue i =
@@ -116,10 +104,10 @@ let factorize_by_all_search n =
 		    if equal r zero then
 			i::factorize q
 		    else
-			continue (add i two)
+			continue (add i n2)
 		end
 		else
-		    continue (add i two)
+		    continue (add i n2)
 	    in
 	    continue (of_int 3)
 	end
@@ -128,23 +116,26 @@ let factorize_by_all_search n =
 	( n, 1 )::[]
     else
 	make_factor_list (factorize n)
-	  
-let make_quotient_ring p =
-    let barrett_reduction = Op2.make_barrett_reduction p in
+
+(** make a quotient ring {i Z/nZ}. *)
+let make_quotient_ring n =
+    let barrett_reduction = F_big_int.make_barrett_reduction n in
     let adjust x =
-	if less x zero then
-	    add x p
-	else if less x p then
+        if less x zero then
+	    add x n
+	else if less x n then
 	    x
 	else
-	    sub x p
+	    sub x n
     in
     let add_mod x y = adjust (add x y) in
     let sub_mod x y = adjust (sub x y) in
     let mul_mod x y = barrett_reduction (mul x y) in
     let square_mod x = barrett_reduction (square x) in
-    let power_mod x n = Op.mass_apply n mul_mod x one in
+    let power_mod x n = mass_apply n mul_mod x one in
     add_mod, sub_mod, mul_mod, square_mod, power_mod
+
+(*
 
 (* Returns:
    true -> n is definitely a composite integer.
@@ -184,7 +175,7 @@ let ascertain_composite_number_by_Miller_Rabin n =
 		continue 0 b
 	    end
 	in
-	if check two then
+	if check n2 then
 	    true
 	else if check n3 then
 	    true
@@ -256,12 +247,12 @@ let factorize_by_Pollard_Miller_Rabin n =
 	    if equal n one then
 		[]
 	    else if mod2 n = 0 then
-		two::factorize (shift_right n 1)
+		n2::factorize (shift_right n 1)
 	    else if ascertain_composite_number_by_Miller_Rabin n then 
 		match factorize_by_Pollard n with
 		    None ->
 		      Printf.printf "Warning: failed to factorize %s\n"
-			  (Conv.string_of_varint2 n);
+			  (to_string n);
 		      non_decomposable := n::!non_decomposable;
 		      []
 		  | Some g ->
@@ -349,7 +340,7 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 	let b = mul_list composite_list in
 (*	Printf.printf "n - 1 = %s\n" (Varint2mod.to_string nm1);
 	print_string "prime: "; print_factor_list prime_list; print_newline();
-	print_string "composite: "; print_list composite_list;
+	print_string "composite: "; print_number_list composite_list;
 	Printf.printf " = %s\n" (Varint2mod.to_string b); flush stdout; *)
 	let is_good_prime_factor p =
 	    let nm1_div_p = compute_nm1_div_p prime_list b p in
