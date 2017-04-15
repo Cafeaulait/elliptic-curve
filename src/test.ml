@@ -180,22 +180,11 @@ let test_barrett_reduction() =
     done;
     flush stdout
 
-(*
-open Arith
-
-module PrimintOp = Field.MakeGenericOperation (Primint)
-
-module Varint2Op = Field.MakeGenericOperation (Varint2)
-
-module Varint10Op = Field.MakeGenericOperation (Varint10)
-
-module Varint2Op2 = Varint.MakeOperation (Varint2)
-
 let test_factorization() =
     for i = 1 to 1000 do 
 	let n = 3 + Random.int (996 * 996) in
 	Printf.printf "%d\n" n; flush stdout;
-	let n = Varint2.of_int n in
+	let n = ZB.of_int n in
 	let l1, a = Prime.factorize_by_Pollard_Miller_Rabin n in
 	print_string " = ";
 	Prime.print_factor_list l1;
@@ -219,16 +208,33 @@ let test_Pocklington_Lehmer() =
 	  | _ -> false
     in
     for n = 0 to 1000 do
-	let n = Varint2.of_int (100001 + n * 2) in
-	if Prime.ascertain_prime_number_by_Pocklington_Lehmer n = is_prime n then
-	    Printf.printf "%d: ok\n" (Varint2.to_int n)
+	let n = ZB.of_int (100001 + n * 2) in
+	if Prime.is_prime_number_by_Pocklington_Lehmer n = is_prime n then
+	    Printf.printf "%d: ok\n" (ZB.to_int n)
 	else begin
-	    Printf.printf "%d: ng\n" (Varint2.to_int n);
+	    Printf.printf "%d: ng\n" (ZB.to_int n);
 	    assert false
 	end;
 	flush stdout
     done;
     ()
+
+let test_Pocklington_Lehmer2() =
+    let n = ZB.of_string "105554676553297" in
+    Printf.printf "n = %s\n" (ZB.to_string n); flush stdout;
+    assert (Prime.is_prime_number_by_Pocklington_Lehmer n);
+    ()
+
+(*
+open Arith
+
+module PrimintOp = Field.MakeGenericOperation (Primint)
+
+module Varint2Op = Field.MakeGenericOperation (Varint2)
+
+module Varint10Op = Field.MakeGenericOperation (Varint10)
+
+module Varint2Op2 = Varint.MakeOperation (Varint2)
 
 let bench_inversion() =
     let start_time = Sys.time() in
@@ -740,8 +746,6 @@ let main() =
 *)
 
 (*
-    test_factorization();
-    test_Pocklington_Lehmer();
     bench_inversion();
     bench_sqrt();
     bench_legendre_symbol();
@@ -776,6 +780,9 @@ let main() =
     test_inversion 997;
     test_legendre_symbol();
     test_barrett_reduction();
+    test_factorization();
+    test_Pocklington_Lehmer();
+    test_Pocklington_Lehmer2();
     ()
 
 ;;

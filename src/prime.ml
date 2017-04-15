@@ -86,7 +86,7 @@ let rec print_number_list = function
       Printf.printf "%s x " (to_string n);
       print_number_list l
 
-(** Factorize a number by brute-force search. *)
+(** Factorize a positive integer by brute-force search. *)
 let factorize_by_all_search n =
     assert (less n last_known_prime_square);
     let rec factorize n =
@@ -118,6 +118,7 @@ let factorize_by_all_search n =
 	make_factor_list (factorize n)
 
 (** make a quotient ring {i Z/nZ}. *)
+(* dynamic module might be better. *)
 let make_quotient_ring n =
     let barrett_reduction = F_big_int.make_barrett_reduction n in
     let adjust x =
@@ -135,12 +136,10 @@ let make_quotient_ring n =
     let power_mod x n = mass_apply n mul_mod x one in
     add_mod, sub_mod, mul_mod, square_mod, power_mod
 
-(*
-
-(* Returns:
-   true -> n is definitely a composite integer.
-   false -> probable prime *)
-let ascertain_composite_number_by_Miller_Rabin n =
+(** The Miller-Rabin primarity test.
+    Given {i n}, if this function returns true {i n} is definitely a composite number.
+    Otherwise, {i n} is a probable prime. *)
+let is_composite_number_by_Miller_Rabin n =
     if less n n1000 then 
 	not (is_prime_under_1000 (to_int n))
     else begin
@@ -155,16 +154,12 @@ let ascertain_composite_number_by_Miller_Rabin n =
 	    in
 	    continue 0 nm1
 	in
-(*	      Printf.printf "n - 1 = 2^%d x %d = %d\n" s (f.to_int t) (f.to_int nm1); *)
 	let check b =
-(*		  Printf.printf "b = %d\n" (f.to_int b);  *)
 	    let b = power_mod b t in
-(*		  Printf.printf "b^%d = %d\n" (f.to_int t) (f.to_int b); *)
 	    if equal b one then
 		false
 	    else begin
 		let rec continue i b =
-(*		    Printf.printf "b^(%d x 2^%d) = %d\n" (f.to_int t) i (f.to_int b); *)
 		    if i = s then
 			true
 		    else if equal b nm1 then
@@ -187,29 +182,23 @@ let ascertain_composite_number_by_Miller_Rabin n =
 	    false
     end
 
-(* Pollard's p-1 method *)
+(** Pollard's {i p-1} algorithm. *)
 let factorize_by_Pollard n =
     let add_mod, sub_mod, mul_mod, square_mod, power_mod = make_quotient_ring n in
-    (* According to wiki (lol), B should be set to around n^(1/6). *)
     let b = sqrt (sqrt n) in
     let b = if less b n1000 then n1000 else b in
-(*	  Printf.printf "B = %d\n" (f.to_int b); *)
     let rec continue p a =
 	if p >= 1000 then
 	    None
 	else if equal a one then
 	    None
 	else if is_prime_under_1000 p then begin
-(*		  Printf.printf "p = %d, " p; *)
 	    let q = of_int p in
 	    let k = log q b in
 	    let m = power q (of_int k) in
-(*		  Printf.printf "m = p^%d = %d, " k (f.to_int m);  *)
 	    let a = power_mod a m in
-(*		  Printf.printf "a^m = %d\n" (f.to_int a); flush stdout; *)
 	    let am1 = sub a one in
 	    let g = gcd am1 n in
-(*		  Printf.printf "  g = %d\n" (f.to_int g); *)
 	    if less_equal g one || equal g n then
 		continue (p + 1) a
 	    else
@@ -222,7 +211,6 @@ let factorize_by_Pollard n =
 	if p >= 1000 then
 	    None
 	else if is_prime_under_1000 p then begin
-(*		  Printf.printf "base = %d\n" p; *)
 	    match continue 2 (of_int p) with
 		Some g -> Some g
 	      | None -> try_base (p + 1)
@@ -235,6 +223,7 @@ let factorize_by_Pollard n =
 type 't decomposition_accuracy =
     TOTALLY_DECOMPOSED | POSSIBLY_COMPOSITE of 't list
 
+(** Factorization by Pollard-Miller-Rabin. *)
 let factorize_by_Pollard_Miller_Rabin n =
     let non_decomposable = ref [] in
     if less n zero then
@@ -243,16 +232,14 @@ let factorize_by_Pollard_Miller_Rabin n =
 	( n, 1 )::[], TOTALLY_DECOMPOSED
     else begin
 	let rec factorize n =
-(*	    Printf.printf "n = %s\n" (Varint2mod.to_string n); flush stdout; *)
 	    if equal n one then
 		[]
 	    else if mod2 n = 0 then
 		n2::factorize (shift_right n 1)
-	    else if ascertain_composite_number_by_Miller_Rabin n then 
+	    else if is_composite_number_by_Miller_Rabin n then 
 		match factorize_by_Pollard n with
 		    None ->
-		      Printf.printf "Warning: failed to factorize %s\n"
-			  (to_string n);
+		      Printf.printf "Warning: failed to factorize %s\n" (to_string n);
 		      non_decomposable := n::!non_decomposable;
 		      []
 		  | Some g ->
@@ -270,11 +257,11 @@ let factorize_by_Pollard_Miller_Rabin n =
 	make_factor_list l, a
     end
 
-(* Returns:
-   true -> n is definitely a prime integer.
-   false -> probable composite integer.
-   Assume that n passed Miller-Rabin test. *)
-let rec ascertain_prime_number_by_Pocklington_Lehmer n =
+(** The Pocklington-Lehmer primarity test.
+    Given {i n}, if this function returns true, then {i n} is prime.
+    Otherwise, {i n} is a probable composite number.
+    Assume that {i n} has passed Miller-Rabin test. *)
+let rec is_prime_number_by_Pocklington_Lehmer n =
     let rec mul_list = function
 	[] -> one
       |	n::l -> mul n (mul_list l)
@@ -288,7 +275,7 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 	      else
 		  mul q (continue l)
 	  | ( q, n )::l ->
-	      if Varint2.equal p q then
+	      if equal p q then
 		  mul (power q (of_int (n - 1))) (continue l)
 	      else
 		  mul (power q (of_int n)) (continue l)
@@ -326,7 +313,7 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 		      else
 			  p::expand (n - 1)
 		  in
-		  if ascertain_prime_number_by_Pocklington_Lehmer p then
+		  if is_prime_number_by_Pocklington_Lehmer p then
 		      continue (( p, n )::prime_list) composite_list l
 		  else
 		      continue prime_list (expand n) l
@@ -338,10 +325,6 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 		  continue [] composite_list prime_list
 	in
 	let b = mul_list composite_list in
-(*	Printf.printf "n - 1 = %s\n" (Varint2mod.to_string nm1);
-	print_string "prime: "; print_factor_list prime_list; print_newline();
-	print_string "composite: "; print_number_list composite_list;
-	Printf.printf " = %s\n" (Varint2mod.to_string b); flush stdout; *)
 	let is_good_prime_factor p =
 	    let nm1_div_p = compute_nm1_div_p prime_list b p in
 	    let rec continue a =
@@ -351,10 +334,6 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 		    let c = sub (power_mod a (nm1_div_p)) one in
 		    let g = gcd c n in
 		    if equal g one then begin
-(*			Printf.printf "%s: %d^%s = 1 (mod N), gcd(%d^%s-1,N) = 1\n"
-			    (Varint2mod.to_string p)
-			    a (Varint2mod.to_string nm1)
-			    a (Varint2mod.to_string nm1_div_p);  *)
 			true
 		    end
 		    else
@@ -365,7 +344,7 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 	    in
 	    continue 2
 	in
-	let greater ( x, _ ) ( y, _ ) = Varint2.compare y x in
+	let greater ( x, _ ) ( y, _ ) = compare y x in
 	let prime_list = List.sort greater prime_list in
 	let rec continue a = function
 	    [] -> false
@@ -382,61 +361,3 @@ let rec ascertain_prime_number_by_Pocklington_Lehmer n =
 	in
 	continue one prime_list
     end
-
-
-
-(*
-
-
-let print l =
-    print_factor_list l;
-    print_newline()
-
-let test n =
-    factorize_by_Pollard_Miller_Rabin (Varint2.of_int n)
-
-let is_composite n =
-    ascertain_composite_number_by_Miller_Rabin (Varint2.of_int n)
-
-let fact n =
-    G.factorize_by_all_search (Varint2.of_int n)
-
-let fact2 n =
-    F.factorize_by_Pollard Varint2mod.make (Varint2.of_int n)
-
-let is_prime n =
-    ascertain_prime_number_by_Pocklington_Lehmer (Varint2.of_int n)
-
-let is_prime2 n =
-    match G.factorize_by_all_search (Varint2.of_int n) with
-	[ _, 1 ] -> true
-      |	_ -> false
-
-let test() =
-    let rec continue n =
-	if n > 99999 then
-	    ()
-	else begin
-	    let b = is_prime n = is_prime2 n in
-	    Printf.printf "n = %d: " n;
-	    print_string (if b then "ok\n" else "ng\n");
-	    assert b;
-	    continue (n + 2)
-	end
-    in
-    continue 1031
-
-let test2() =
-    let a = Varint2.of_int 16 in
-    let b = Varint2.of_int 3 in
-    let c = Varint2.of_int 1048583 in
-    let d = Varint2.of_int 2097169 in
-    let n = Varint2.add (Varint2.mul (Varint2.mul a b) (Varint2.mul c d)) Varint2.one in
-    Printf.printf "n = %s\n" (Varint2mod.to_string n); flush stdout;
-    if ascertain_prime_number_by_Pocklington_Lehmer n then
-	print_string "prime\n"
-    else
-	print_string "composite\n";
-    ()
-*)
-*)
