@@ -411,6 +411,20 @@ let test_ElGamal192() =
     done;
     ()
 
+let bench_ec192() =
+    let x = F192BIT.of_string "602046282375688656758213480587526111916698976636884684818" in
+    let y = F192BIT.of_string "174050332293622031404857552280219410364023488927386650641" in
+    let g = ( x, y, F192BIT.one ) in
+    print_string "F_(2^192 - 2^64 - 1)\n";
+    Printf.printf "p = %s\n" (F192BIT.to_string P192BIT.p);
+    Printf.printf "g = %s\n" (E192BIT.string_of_point g);
+    let start_time = Unix.gettimeofday() in
+    let og = E192BIT.multiply ECSpec192BIT.order g in
+    let end_time = Unix.gettimeofday() in
+    Printf.printf "[-]g = %s in %.3fms\n"
+        (E192BIT.string_of_point og) ((end_time -. start_time) *. 1000.0);
+    ()
+
 let main() =
     let seed = int_of_float (Unix.time()) in
     Random.init seed;
@@ -434,6 +448,7 @@ let main() =
     test_ec_ff();
     test_ElGamal22();
     test_ElGamal192();
+    bench_ec192();
     ()
 
 ;;
