@@ -225,6 +225,68 @@ let test_Pocklington_Lehmer2() =
     assert (Prime.is_prime_number_by_Pocklington_Lehmer n);
     ()
 
+module F1009 = F_big_int.Make (struct type element = Z.t let p = big_int_of_int 1009 end)
+
+module ECSpec1009 =
+    struct
+      type element = Z.t
+
+      let a = big_int_of_int 71
+      let b = big_int_of_int 602
+    end
+
+module E1009 = Ec.Make (F1009) (ECSpec1009)
+
+let print_point( x, y, z ) =
+    if F1009.equal z F1009.zero then
+	print_string "o"
+    else begin
+	let x, y = E1009.to_affine_coord( x, y, z ) in
+	print_string "(";
+	print_string (F1009.to_string x);
+	print_string ",";
+	print_string (F1009.to_string y);
+	print_string ")"
+    end
+
+let test_ec_ff() =
+    let make_point x y =
+	( (big_int_of_int x), (big_int_of_int y), F1009.one )
+    in
+    let get_point( x, y, z ) =
+	let x, y = E1009.to_affine_coord( x, y, z ) in
+        int_of_big_int x, int_of_big_int y
+    in
+    let plus p q =
+	E1009.plus p q
+    in
+    let multiply n p =
+	E1009.multiply (big_int_of_int n) p
+    in
+    E1009.check_parameter();
+    let p = make_point 1 237 in
+    let q = make_point 190 271 in
+    let p10 = multiply 10 p in
+    Printf.printf "[10]P = %s\n" (E1009.string_of_point p10);
+    assert (get_point p10 = ( 32, 737 ));
+    let q10 = multiply 10 q in
+    Printf.printf "[10]Q = %s\n" (E1009.string_of_point q10);
+    assert (get_point q10 = ( 592, 97 ));
+    let p106 = multiply 106 p in
+    Printf.printf "[106]P = %s\n" (E1009.string_of_point p106);
+    assert (get_point p106 = ( 639, 160 ));
+    let q106 = multiply 106 q in
+    Printf.printf "[106]Q = %s\n" (E1009.string_of_point q106);
+    assert (get_point q106 = ( 639, 849 ));
+    let p265 = multiply 265 p in
+    Printf.printf "[265]P = %s\n" (E1009.string_of_point p265);
+    assert (get_point p265 = ( 50, 0 ));
+    let q265 = multiply 265 q in
+    Printf.printf "[265]Q = %s\n" (E1009.string_of_point q265);
+    assert (get_point q265 = ( 50, 0 ));
+    E1009.report();
+    ()
+
 (*
 open Arith
 
@@ -236,208 +298,10 @@ module Varint10Op = Field.MakeGenericOperation (Varint10)
 
 module Varint2Op2 = Varint.MakeOperation (Varint2)
 
-let bench_inversion() =
-    let start_time = Sys.time() in
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    for a = 1 to p - 1 do
-		let _ = PrimintOp.invert a p in
-		()
-	    done
-	end
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "inversion (prim): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    let pr = Varint10.of_int p in
-	    for a = 1 to p - 1 do
-		let _ = Varint10Op.invert (Varint10.of_int a) pr in
-		()
-	    done
-	end
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "inversion (varint10): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    let pr = Varint2.of_int p in
-	    for a = 1 to p - 1 do
-		let _ = Varint2Op.invert (Varint2.of_int a) pr in
-		()
-	    done
-	end
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "inversion (varint2): %.2fs\n" (end_time -. start_time);
-    ()
-
-let bench_sqrt() =
-    let start_time = Sys.time() in
-    for n = 1 to 20000 do
-	let _ = PrimintOp.sqrt n in
-	()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "sqrt (prim): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for n = 1 to 20000 do
-	let _ = Varint10Op.sqrt (Varint10.of_int n) in
-	()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "sqrt (varint10): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for n = 1 to 20000 do
-	let _ = Varint2Op.sqrt (Varint2.of_int n) in
-	()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "sqrt (varint2): %.2fs\n" (end_time -. start_time);
-    ()
-
-let bench_legendre_symbol() =
-    let start_time = Sys.time() in
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    for a = 0 to p - 1 do
-		let _ = PrimintOp.legendre_symbol a p in
-		()
-	    done
-	end
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "legendre symbol (prim): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    let pr = Varint10.of_int p in
-	    for a = 0 to p - 1 do
-		let _ = Varint10Op.legendre_symbol (Varint10.of_int a) pr in
-		()
-	    done
-	end
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "legendre symbol (varint10): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for p = 3 to 999 do
-	if Prime.is_prime_under_1000 p then begin
-	    let pr = Varint2.of_int p in
-	    for a = 0 to p - 1 do
-		let _ = Varint2Op.legendre_symbol (Varint2.of_int a) pr in
-		()
-	    done
-	end
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "legendre symbol (varint2): %.2fs\n" (end_time -. start_time);
-    ()
-
-let bench_factorization() =
-    let start_time = Sys.time() in
-    for n = 996 * 996 - 10000 to 996 * 996 do
-(*	Printf.printf "n = %d\n" n; flush stdout; *)
-	let n = Varint2.of_int n in
-	let _ = Prime.factorize_by_all_search n in
-	()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "fact (all search): %.2fs\n" (end_time -. start_time); flush stdout;
-    let start_time = Sys.time() in
-    for n = 996 * 996 - 10000 to 996 * 996 do
-(*	Printf.printf "n = %d\n" n; flush stdout; *)
-	let n = Varint2.of_int n in
-	let _ = Prime.factorize_by_Pollard_Miller_Rabin n in
-	()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "fact (Pollard): %.2fs\n" (end_time -. start_time); flush stdout;
-    ()
-
 (*
 module FP997 = Primintmod.Make (struct let p = 997 end)
 
 module FB997 = Varint2mod.Make (struct let p = "997" end)
-
-let bench_quadratic_residue() =
-    let p = 997 in
-    let start_time = Sys.time() in
-    for n = 1 to p - 1 do
-	match FP997.legendre_symbol n with
-	    1 ->
-	      let _ = FP997.quadratic_residue n in
-	      ()
-	  | _ -> ()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "quadratic residue (prim): %.2fs\n" (end_time -. start_time);
-    let start_time = Sys.time() in
-    for n = 1 to p - 1 do
-	let n = Varint2.of_int n in
-	match FB997.legendre_symbol n with
-	    1 ->
-	      let _ = FB997.quadratic_residue n in
-	      ()
-	  | _ -> ()
-    done;
-    let end_time = Sys.time() in
-    Printf.printf "quadratic residue (varint2): %.2fs\n" (end_time -. start_time);
-    ()
-
-module F1009 = Varint2mod.Make (struct let p = "1009" end)
-
-module ECSpec1009 =
-    struct
-      type element = Varint2.element
-
-      let a = Varint2.of_int 71
-      let b = Varint2.of_int 602
-    end
-
-module E1009 = Ec.Make (F1009) (ECSpec1009)
-
-let print_point ( x, y, z ) =
-    if Varint2.equal z Varint2.zero then
-	print_string "o"
-    else begin
-	let x, y = E1009.to_affine_coord( x, y, z ) in
-	print_string "(";
-	print_string (Conv.string_of_varint2 x);
-	print_string ",";
-	print_string (Conv.string_of_varint2 y);
-	print_string ")"
-    end
-
-let test_ec_ff() =
-    let make_point x y =
-	( (Varint2.of_int x), (Varint2.of_int y), Varint2.one )
-    in
-    let plus p q =
-	E1009.plus p q
-    in
-    let multiply n p =
-	E1009.multiply (Varint2.of_int n) p
-    in
-    let p = make_point 1 237 in
-    let q = make_point 190 271 in
-    print_string "[10]P = "; print_point (multiply 10 p); print_newline();
-    print_string "[10]Q = "; print_point (multiply 10 q); print_newline();
-    print_string "[106]P = "; print_point (multiply 106 p); print_newline();
-    print_string "[106]Q = "; print_point (multiply 106 q); print_newline();
-    print_string "[265]P = "; print_point (multiply 265 p); print_newline();
-    print_string "[265]Q = "; print_point (multiply 265 q); print_newline();
-    let p = make_point 32 737 in
-    let q = make_point 592 97 in
-    print_string "[2]P + [0]Q = "; print_point (plus (multiply 2 p) (multiply 0 q));
-    print_newline();
-    print_string "[1]P + [1]Q = "; print_point (plus (multiply 1 p) (multiply 1 q));
-    print_newline();
-    print_string "[3]P + [4]Q = "; print_point (plus (multiply 3 p) (multiply 4 q));
-    print_newline();
-    ()
 
 module F22BIT = Varint2mod.Make (struct let p = "4063417" end)
 
@@ -744,14 +608,6 @@ let main() =
     if true then
 	exit 1;
 *)
-
-(*
-    bench_inversion();
-    bench_sqrt();
-    bench_legendre_symbol();
-    bench_factorization();
-    bench_quadratic_residue();
-*)
 (*
     test_ec_ff();
     test_ec_plus();
@@ -783,6 +639,7 @@ let main() =
     test_factorization();
     test_Pocklington_Lehmer();
     test_Pocklington_Lehmer2();
+    test_ec_ff();
     ()
 
 ;;
