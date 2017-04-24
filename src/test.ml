@@ -285,6 +285,9 @@ end
 
 module E22BIT = Ec.Make (F22BIT) (ECSpec22BIT)
 
+let is_zero( _, _, z ) =
+    sign_big_int z = 0
+
 let test_ElGamal22() =
     let n = 4063417 in
     let make_point x y =
@@ -314,7 +317,9 @@ let test_ElGamal22() =
     Printf.printf "F_%d\n" n;
     print_string "EC: y^2 = x^3 + 83527x + 42987\n";
     Printf.printf "g = %s\n" (E22BIT.string_of_point g);
-    Printf.printf "[4061081]g = %s\n" (E22BIT.string_of_point (multiply 4061081 g));
+    let og = multiply 4061081 g in
+    Printf.printf "[4061081]g = %s\n" (E22BIT.string_of_point og);
+    assert (is_zero og);
     for i = 0 to 1000 do
 	let x = 3 + Random.int 100000 in
 	let k = 1 + Random.int (n - 1) in
@@ -386,7 +391,9 @@ let test_ElGamal192() =
     print_string "F_(2^192 - 2^64 - 1)\n";
     Printf.printf "p = %s\n" (F192BIT.to_string P192BIT.p);
     Printf.printf "g = %s\n" (E192BIT.string_of_point g);
-    Printf.printf "[-]g = %s\n" (E192BIT.string_of_point (E192BIT.multiply ECSpec192BIT.order g));
+    let og = E192BIT.multiply ECSpec192BIT.order g in
+    Printf.printf "[-]g = %s\n" (E192BIT.string_of_point og);
+    assert (is_zero og);
     for i = 0 to 1000 do
 	let x = 3 + Random.int 100000 in
 	let k = 1 + Random.int 100000 in
@@ -423,6 +430,65 @@ let bench_ec192() =
     let end_time = Unix.gettimeofday() in
     Printf.printf "[-]g = %s in %.3fms\n"
         (E192BIT.string_of_point og) ((end_time -. start_time) *. 1000.0);
+    assert (is_zero og);
+    ()
+
+let hex = [| '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7';
+             '8'; '9'; 'a'; 'b'; 'c'; 'd'; 'e'; 'f' |]
+
+let hexadecimal_of_big_int n =
+    (* assume 64 bit architecture. *)
+    let length = 64 * (num_digits_big_int n) in
+    let unit = 32 in
+    let s = Bytes.create (length / 4) in
+    for i = 0 to length / unit - 1 do
+        let x = int_of_big_int (extract_big_int n (i * unit) unit) in
+        for j = 0 to (unit / 4) - 1 do
+            s.[(length / unit - 1 - i) * (unit / 4) + (unit / 4 - 1 - j)] <- hex.((x lsr (j * 4)) land 0xf)
+        done
+    done;
+    let start =
+        let i = ref 0 in
+        while !i < length / 4 && s.[!i] = '0' do
+            incr i
+        done;
+        !i
+    in
+    if start > 0 then
+        Bytes.sub s start (length / 4 - start)
+    else
+        s
+
+let big_int_of_hexadecimal s =
+    let length = String.length s in
+    let get_digit i =
+        let c = s.[i] in
+        if c >= '0' && c <= '9' then
+            (int_of_char c) - (int_of_char '0')
+        else if c >= 'a' && c <= 'f' then
+            (int_of_char c) - (int_of_char 'a') + 10
+        else if c >= 'a' && c <= 'f' then
+            (int_of_char c) - (int_of_char 'a') + 10
+        else 
+            failwith "invalid char in hex string"
+    in
+    let rec continue i n j z =
+        if i + j = length then
+            add_int_big_int n (shift_left_big_int z (i * 4))
+        else if i = 12 then 
+            continue 0 0 (i + j) (add_int_big_int n (shift_left_big_int z (i * 4)))
+        else
+            continue (i + 1) ((n lsl 4) lor (get_digit (i + j))) j z
+    in
+    continue 0 0 0 zero_big_int
+
+let test_hexadecimal() =
+    let n = big_int_of_hexadecimal "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012" in
+    Printf.printf "%s\n" (string_of_big_int n);
+    assert (string_of_big_int n = "602046282375688656758213480587526111916698976636884684818");
+    let s = hexadecimal_of_big_int n in
+    Printf.printf "%s\n" s;
+    assert (s = "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012");
     ()
 
 let main() =
@@ -448,6 +514,7 @@ let main() =
     test_ec_ff();
     test_ElGamal22();
     test_ElGamal192();
+    test_hexadecimal();
     bench_ec192();
     ()
 
