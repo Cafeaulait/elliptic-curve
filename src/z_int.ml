@@ -33,6 +33,8 @@ module Core : (Field.Core with type element = int) = struct
 
   let of_string = int_of_string
   let to_string = string_of_int
+  let of_hex s = int_of_string ("0x"^s)
+  let to_hex n = Printf.sprintf "%x" n
   let add x y = x + y
   let unary_minus x = -x
   let sub x y = x - y

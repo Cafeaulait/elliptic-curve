@@ -4,6 +4,15 @@ open Big_int_Z
 module ZI : (Field.t with type element = int) = Z_int
 module ZB : (Field.t with type element = Z.t) = Z_big_int
 
+let test_hexadecimal() =
+    let n = Z_big_int.big_int_of_hexadecimal "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012" in
+    Printf.printf "%s\n" (string_of_big_int n);
+    assert (string_of_big_int n = "602046282375688656758213480587526111916698976636884684818");
+    let s = Z_big_int.hexadecimal_of_big_int n in
+    Printf.printf "%s\n" s;
+    assert (s = "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012");
+    ()
+
 let test_bitlist() =
     let to_string l =
         List.fold_left (^) "" (List.map string_of_int l)
@@ -244,9 +253,9 @@ let test_ec_ff() =
 	let x, y = E1009.to_affine_coord( x, y, z ) in
         int_of_big_int x, int_of_big_int y
     in
-    let plus p q =
+(*    let plus p q =
 	E1009.plus p q
-    in
+    in *)
     let multiply n p =
 	E1009.multiply (big_int_of_int n) p
     in
@@ -422,7 +431,7 @@ let bench_ec192() =
     let x = F192BIT.of_string "602046282375688656758213480587526111916698976636884684818" in
     let y = F192BIT.of_string "174050332293622031404857552280219410364023488927386650641" in
     let g = ( x, y, F192BIT.one ) in
-    print_string "F_(2^192 - 2^64 - 1)\n";
+    print_string "192 bits F_(2^192 - 2^64 - 1)\n";
     Printf.printf "p = %s\n" (F192BIT.to_string P192BIT.p);
     Printf.printf "g = %s\n" (E192BIT.string_of_point g);
     let start_time = Unix.gettimeofday() in
@@ -433,68 +442,79 @@ let bench_ec192() =
     assert (is_zero og);
     ()
 
-let hex = [| '0'; '1'; '2'; '3'; '4'; '5'; '6'; '7';
-             '8'; '9'; 'a'; 'b'; 'c'; 'd'; 'e'; 'f' |]
+module P224BIT = struct
+  type element = Z.t
 
-let hexadecimal_of_big_int n =
-    (* assume 64 bit architecture. *)
-    let length = 64 * (num_digits_big_int n) in
-    let unit = 32 in
-    let s = Bytes.create (length / 4) in
-    for i = 0 to length / unit - 1 do
-        let x = int_of_big_int (extract_big_int n (i * unit) unit) in
-        for j = 0 to (unit / 4) - 1 do
-            s.[(length / unit - 1 - i) * (unit / 4) + (unit / 4 - 1 - j)] <- hex.((x lsr (j * 4)) land 0xf)
-        done
-    done;
-    let start =
-        let i = ref 0 in
-        while !i < length / 4 && s.[!i] = '0' do
-            incr i
-        done;
-        !i
-    in
-    if start > 0 then
-        Bytes.sub s start (length / 4 - start)
-    else
-        s
+  let p = big_int_of_string "26959946667150639794667015087019630673557916260026308143510066298881"
+end
 
-let big_int_of_hexadecimal s =
-    let length = String.length s in
-    let get_digit i =
-        let c = s.[i] in
-        if c >= '0' && c <= '9' then
-            (int_of_char c) - (int_of_char '0')
-        else if c >= 'a' && c <= 'f' then
-            (int_of_char c) - (int_of_char 'a') + 10
-        else if c >= 'a' && c <= 'f' then
-            (int_of_char c) - (int_of_char 'a') + 10
-        else 
-            failwith "invalid char in hex string"
-    in
-    let rec continue i n j z =
-        if i + j = length then
-            add_int_big_int n (shift_left_big_int z (i * 4))
-        else if i = 12 then 
-            continue 0 0 (i + j) (add_int_big_int n (shift_left_big_int z (i * 4)))
-        else
-            continue (i + 1) ((n lsl 4) lor (get_digit (i + j))) j z
-    in
-    continue 0 0 0 zero_big_int
+module F224BIT = F_big_int.Make (P224BIT)
 
-let test_hexadecimal() =
-    let n = big_int_of_hexadecimal "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012" in
-    Printf.printf "%s\n" (string_of_big_int n);
-    assert (string_of_big_int n = "602046282375688656758213480587526111916698976636884684818");
-    let s = hexadecimal_of_big_int n in
-    Printf.printf "%s\n" s;
-    assert (s = "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012");
+module ECSpec224BIT = struct
+  type element = Z.t
+
+  let a = big_int_of_string "26959946667150639794667015087019630673557916260026308143510066298878"
+  let b = F224BIT.of_hex "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4"
+
+  let order = big_int_of_string "26959946667150639794667015087019625940457807714424391721682722368061"
+end
+
+module E224BIT = Ec.Make (F224BIT) (ECSpec224BIT)
+
+let bench_ec224() =
+    let x = F224BIT.of_hex "b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21" in
+    let y = F224BIT.of_hex "bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34" in
+    let g = ( x, y, F224BIT.one ) in
+    print_string "224 bits\n";
+    Printf.printf "p = %s\n" (F224BIT.to_string P224BIT.p);
+    Printf.printf "g = %s\n" (E224BIT.string_of_point g);
+    let start_time = Unix.gettimeofday() in
+    let og = E224BIT.multiply ECSpec224BIT.order g in
+    let end_time = Unix.gettimeofday() in
+    Printf.printf "[-]g = %s in %.3fms\n"
+        (E224BIT.string_of_point og) ((end_time -. start_time) *. 1000.0);
+    assert (is_zero og);
+    ()
+
+module P521BIT = struct
+  type element = Z.t
+
+  let p = big_int_of_string "6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151"
+end
+
+module F521BIT = F_big_int.Make (P521BIT)
+
+module ECSpec521BIT = struct
+  type element = Z.t
+
+  let a = big_int_of_string "6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057148"
+  let b = F521BIT.of_hex "051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00"
+
+  let order = big_int_of_string "6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005449"
+end
+
+module E521BIT = Ec.Make (F521BIT) (ECSpec521BIT)
+
+let bench_ec521() =
+    let x = F521BIT.of_hex "c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66" in
+    let y = F521BIT.of_hex "11839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650" in
+    let g = ( x, y, F521BIT.one ) in
+    print_string "521 bits\n";
+    Printf.printf "p = %s\n" (F521BIT.to_string P521BIT.p);
+    Printf.printf "g = %s\n" (E521BIT.string_of_point g);
+    let start_time = Unix.gettimeofday() in
+    let og = E521BIT.multiply ECSpec521BIT.order g in
+    let end_time = Unix.gettimeofday() in
+    Printf.printf "[-]g = %s in %.3fms\n"
+        (E521BIT.string_of_point og) ((end_time -. start_time) *. 1000.0);
+    assert (is_zero og);
     ()
 
 let main() =
     let seed = int_of_float (Unix.time()) in
     Random.init seed;
     Printf.printf "seed = %d\n" seed;
+    test_hexadecimal();
     for _ = 1 to 1000 do
         test_bitlist();
         test_four_arithmetic_ops();
@@ -514,8 +534,9 @@ let main() =
     test_ec_ff();
     test_ElGamal22();
     test_ElGamal192();
-    test_hexadecimal();
     bench_ec192();
+    bench_ec224();
+    bench_ec521();
     ()
 
 ;;

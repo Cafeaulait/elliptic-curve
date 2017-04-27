@@ -289,7 +289,7 @@ let rec is_prime_number_by_Pocklington_Lehmer n =
     else begin
 	let nm1 = sub n one in
 	let sqrt_n = sqrt n in
-	let p_power_nm1_cache = Array.create 1000 None in
+	let p_power_nm1_cache = Array.make 1000 None in
 	let add_mod, sub_mod, mul_mod, square_mod, power_mod = make_quotient_ring n in
 	let power_mod a n =
 	    power_mod (of_int a) n

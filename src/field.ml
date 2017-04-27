@@ -21,6 +21,8 @@ module type Core = sig
   val to_bitlist : element -> int list
   val of_string : string -> element
   val to_string : element -> string
+  val of_hex : string -> element
+  val to_hex : element -> string
   val add : element -> element -> element
   val unary_minus : element -> element
   val sub : element -> element -> element
