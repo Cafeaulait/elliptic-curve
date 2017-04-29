@@ -73,6 +73,7 @@ The result is as follows.
 | P-192 | 0.993ms      |
 | P-224 | 1.210ms      |
 | P-521 | 4.545ms      |
+
 (Core i7-4790K 4.00GHz)
 
 ## License
