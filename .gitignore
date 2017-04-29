@@ -20,4 +20,4 @@ _build/
 setup.data
 setup.log
 
-man/html.stamp
+docs/html.stamp
