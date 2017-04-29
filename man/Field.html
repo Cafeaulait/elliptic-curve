@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Z_int.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Field" rel="Chapter" href="Field.html">
+<link title="Z_int" rel="Chapter" href="Z_int.html">
+<link title="Z_big_int" rel="Chapter" href="Z_big_int.html">
+<link title="F_int" rel="Chapter" href="F_int.html">
+<link title="F_big_int" rel="Chapter" href="F_big_int.html">
+<link title="Naf" rel="Chapter" href="Naf.html">
+<link title="Prime" rel="Chapter" href="Prime.html">
+<link title="Ec" rel="Chapter" href="Ec.html"><title>Field</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Z_int.html" title="Z_int">Next</a>
+</div>
+<h1>Module <a href="type_Field.html">Field</a></h1>
+
+<pre><span class="keyword">module</span> Field: <code class="code">sig</code> <a href="Field.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Generic definitions for finite fields.<br>
+</div>
+<hr width="100%">
+
+<pre><span id="EXCEPTIONOverflow"><span class="keyword">exception</span> Overflow</span></pre>
+<div class="info ">
+Overflow or underflow during an arithmetic operation.<br>
+</div>
+
+<pre><span class="keyword">module type</span> <a href="Field.Order.html">Order</a> = <code class="code">sig</code> <a href="Field.Order.html">..</a> <code class="code">end</code></pre><div class="info">
+The order of a field.
+</div>
+
+<pre><span class="keyword">module type</span> <a href="Field.Core.html">Core</a> = <code class="code">sig</code> <a href="Field.Core.html">..</a> <code class="code">end</code></pre><div class="info">
+Core operations in a field.
+</div>
+
+<pre><span class="keyword">module type</span> <a href="Field.t-c.html">t</a> = <code class="code">sig</code> <a href="Field.t-c.html">..</a> <code class="code">end</code></pre><div class="info">
+The type of a field.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Field.MakeGenericOperation.html">MakeGenericOperation</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">C</code><code class="code"> : </code><code class="type"><a href="Field.Core.html">Core</a></code><code class="code">) -&gt; </code><code class="code">sig</code> <a href="Field.MakeGenericOperation.html">..</a> <code class="code">end</code></div></pre><div class="info">
+Generic operations derived from the core operations.
+</div>
+</body></html>

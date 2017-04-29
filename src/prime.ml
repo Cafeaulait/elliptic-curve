@@ -36,7 +36,7 @@ let make_prime_table_under_1000() =
 (* table of primes < 1000 *)
 let prime_table_under_1000 = make_prime_table_under_1000()
 
-(** Given a positive integer less than 1000, this function returns true if the number is prime. *)
+(* Given a positive integer less than 1000, this function returns true if the number is prime. *)
 let is_prime_under_1000 n =
     assert (n < 1000);
     prime_table_under_1000.(n)
@@ -86,7 +86,7 @@ let rec print_number_list = function
       Printf.printf "%s x " (to_string n);
       print_number_list l
 
-(** Factorize a positive integer by brute-force search. *)
+(** Factorizes a positive integer by brute-force search. *)
 let factorize_by_all_search n =
     assert (less n last_known_prime_square);
     let rec factorize n =
@@ -117,7 +117,8 @@ let factorize_by_all_search n =
     else
 	make_factor_list (factorize n)
 
-(** make a quotient ring {i Z/nZ}. *)
+(** Makes a quotient ring {i Z/nZ}. 
+    [make_quotient_ring n] returns a tuple of 5 operators ( add, sub, mul, square, power ). *)
 (* dynamic module might be better. *)
 let make_quotient_ring n =
     let barrett_reduction = F_big_int.make_barrett_reduction n in
@@ -258,7 +259,7 @@ let factorize_by_Pollard_Miller_Rabin n =
     end
 
 (** The Pocklington-Lehmer primarity test.
-    Given {i n}, if this function returns true, then {i n} is prime.
+    Given {i n}, if this function returns true, then {i n} is a prime.
     Otherwise, {i n} is a probable composite number.
     Assume that {i n} has passed Miller-Rabin test. *)
 let rec is_prime_number_by_Pocklington_Lehmer n =

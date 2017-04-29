@@ -1,26 +1,37 @@
-(** The generic definitions for a field. *)
+(** Generic definitions for finite fields. *)
 
 (** Overflow or underflow during an arithmetic operation. *)
 exception Overflow
 
-(** The order of a field. *)
+(** The order of a field. {i p} denotes the order of the field. *)
 module type Order = sig
   type element
 
   val p : element
 end
 
-(** The core operations in a field. *)
+(** Core operations in a field. *)
 module type Core = sig
   type element
 
+  (** Zero. *)
   val zero : element
+
+  (** The unit element. *)
   val one : element
+
+  (** Conversions from/to int. *)
   val of_int : int -> element
   val to_int : element -> int
+
+  (** returns a list of 0 or 1. *)
   val to_bitlist : element -> int list
+
+  (** Conversions from/to string. *)
   val of_string : string -> element
   val to_string : element -> string
+
+  (** Conversions from/to hexadecimal. *)
   val of_hex : string -> element
   val to_hex : element -> string
   val add : element -> element -> element
@@ -47,21 +58,40 @@ module type t = sig
 
   val log : element -> element -> int
   val gcd : element -> element -> element
+
+  (** [extended_gcd x y] returns a triple {i ( a, b, c )} s.t. {i ax + by = c = gcd(x,y)}, provided that both x and y >= 0. *)
   val extended_gcd : element -> element -> element * element * element
+
+  (** Finds the inverse element. *)
   val invert : element -> element
+
+  (** Computes [sqrt n] in the Babylonian method. {i n} must be positive. *)
   val sqrt : element -> element
+
+  (** [mass_add n add one zero minus_one] computes the summation of {i n} elements of [one]. *)
   val mass_add : element -> ('t -> 't -> 't) -> 't -> 't -> 't -> 't
+
+  (** Let * be a commutative and associative binary operator.
+      [mass_apply n f u e] computes {i u * u * ... * u} or {i u^n}
+      provided that [f] is a prefix notation of * i.e. [f x y] = {i x * y}.
+      [e] is the unit of * i.e. {i x * e = x}. *)
   val mass_apply : element -> ('t -> 't -> 't) -> 't -> 't -> 't
+
+  (** [power x n] computes [x^n]. *)
   val power : element -> element -> element
+
+  (** The Legendre symbol. *)
   val legendre_symbol : element -> int
+
+  (** Quadratic residue. *)
   val quadratic_residue : element -> element
 end
   
-(** A set of generic operations based on the core operations. *)
+(** Generic operations derived from the core operations. *)
 module MakeGenericOperation (C : Core) = struct
   open C
 
-  (** Find the maximum integer x s.t. b^x <= n, assuming b, n >= 0. *)
+  (** Finds the maximum integer {i x} s.t. {i b^x <= n} provided that {i b, n >= 0}. *)
   let log b n =
       let approximate c =
           let rec continue x b =
@@ -105,7 +135,7 @@ module MakeGenericOperation (C : Core) = struct
 	      gcd y r
       end
 
-  (** [extended_gcd x y] returns (a,b,c) s.t. ax + by = c = gcd(x,y), provided that both x and y >= 0. *)
+  (** [extended_gcd x y] returns a triple {i ( a, b, c )} s.t. {i ax + by = c = gcd(x,y)}, provided that both x and y >= 0. *)
   let extended_gcd x y =
       let rec continue a0 b0 c0 a1 b1 c1 =
 	  (* invariant: ax + by = c *)
@@ -124,7 +154,7 @@ module MakeGenericOperation (C : Core) = struct
       else
 	  continue one zero x zero one y
 
-  (** [invert a p] returns {i a}{^ -1} mod {i p} assuming {i p} is a prime number and {i 0} < {i a} < {i p}. *)
+  (** [invert a p] returns {i a}{^ -1} mod {i p} provided that {i p} is a prime number and {i 0} < {i a} < {i p}. *)
   let invert a p =
       let x, _, g = extended_gcd a p in
       if not (equal g one) then begin
@@ -135,7 +165,7 @@ module MakeGenericOperation (C : Core) = struct
       let x = if less x zero then add x p else x in
       x
 
-  (** Compute [sqrt n] in the Babylonian method. {i n} must be positive. *)
+  (** Computes [sqrt n] in the Babylonian method. {i n} must be positive. *)
   let sqrt n =
       assert (less_equal zero n);
       let rec continue r =
@@ -149,7 +179,7 @@ module MakeGenericOperation (C : Core) = struct
       in
       continue one
 
-  (** Compute [x + x + ... + x]. *)
+  (** [mass_add n add one zero minus_one] computes the summation of {i n} elements of [one]. *)
   let mass_add n add one zero minus_one =
       let naf_list = Naf.of_bitlist (to_bitlist n) in
       let rec continue = function
@@ -168,7 +198,10 @@ module MakeGenericOperation (C : Core) = struct
       in
       continue (List.rev naf_list)
 
-  (** Compute [u * u * ... * u]. *)
+  (** Let * be a commutative and associative binary operator.
+      [mass_apply n f u e] computes {i u * u * ... * u} or {i u^n}
+      provided that [f] is a prefix notation of * i.e. [f x y] = {i x * y}.
+      [e] is the unit of * i.e. {i x * e = x}. *)
   (* e: the unit of multiplication
      u: the unit of addition. *)
   let mass_apply n f u e =
@@ -190,7 +223,7 @@ module MakeGenericOperation (C : Core) = struct
       in
       continue n
 
-  (** Compute [x^n]. *)
+  (** [power x n] computes [x^n]. *)
   let power x n =
     assert (less_equal zero n);
     mass_apply n mul x one
@@ -264,7 +297,7 @@ module MakeGenericOperation (C : Core) = struct
       find_nonresidue()
 
   (** [quadratic_residue n a p] finds a quadratic residue of [a] mod [p].
-      [n] is an arbitrary quadratic non-residue. *)
+      [n] can be an arbitrary quadratic non-residue. *)
   let quadratic_residue quadratic_nonresidue a p =
       let a_inv = invert a p in
       let pm1 = sub p one in

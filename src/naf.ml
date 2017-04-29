@@ -1,4 +1,5 @@
-(** Non adjacent form representation. *)
+(** Non adjacent form representation, which reduces the number of non-zero bits
+    than a simple bit-list representation. *)
 
 let of_bitlist l =
     let rec continue cj = function

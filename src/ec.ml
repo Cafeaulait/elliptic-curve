@@ -1,6 +1,7 @@
 (** Elliptic curves. *)
 
-(** Given {i x}, this indicates solutions of {i y}. *)
+(** This data structure indicates solutions of an elliptic curve equation.
+    There are at most 2 solutions. *)
 type 't solution =
     NONE | SINGLE of 't | DOUBLE of 't * 't
 
@@ -12,7 +13,7 @@ module type Spec = sig
   val b : element
 end
 
-(** This functor defines elliptic curve S on field F, and basic operations on it. *)
+(** [Make (F) (S)] defines elliptic curve S on field F, and basic operations on it. *)
 module Make (F : Field.t) (S : Spec with type element = F.element) = struct
   open F
   open S
@@ -23,13 +24,13 @@ module Make (F : Field.t) (S : Spec with type element = F.element) = struct
   (** Unit element. We use projective coordinates to represent a point. *)
   let o = ( zero, one, zero )
 	  
-  (** Check if the equations has distinct roots. *)
+  (** Checks if the equations has distinct roots. *)
   let check_parameter() =
       let d = add (mul n4 (mul a (square a))) (mul n27 (square b)) in
       assert (not (equal d zero));
       ()
 
-  (** Transform a projective coordinate to an affine coordinate. *)
+  (** Transforms a projective coordinate to an affine coordinate. *)
   let to_affine_coord( x, y, z ) =
       (* assume ( x, y, z ) != o *)
       if equal z one then
@@ -39,11 +40,11 @@ module Make (F : Field.t) (S : Spec with type element = F.element) = struct
 	  ( (mul x z), (mul y z) )
       end
 
-  (** Transform an affine coordinate to a projective coordinate. *)
+  (** Transforms an affine coordinate to a projective coordinate. *)
   let to_projective_coord( x, y ) =
       ( x, y, one )
 
-  (** Convert a point to a string. *)
+  (** Converts a point to a string. *)
   let string_of_point( x, y, z ) =
       if equal z zero then
 	  "o"
@@ -134,12 +135,12 @@ module Make (F : Field.t) (S : Spec with type element = F.element) = struct
       let q = unary_minus p in
       mass_add n plus p o q
 
-  (** Compute {i x^3 + ax + b}. *)
+  (** Computes {i x^3 + ax + b}. *)
   let value x =
       let x2 = square x in
       add (mul x x2) (add (mul a x) b)
 
-  (** Given {i x}, find the solutions {i y} of {i y^2 = x^3 + ax + b}. *)
+  (** Given {i x}, [find_y x] finds the solutions {i y} of {i y^2 = x^3 + ax + b}. *)
   let find_y x =
       let v = value x in
       match legendre_symbol v with
